@@ -1,0 +1,266 @@
+{
+  "entities": {
+    "NationalServicePersonnel": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "NationalServicePersonnel",
+      "type": "object",
+      "description": "Represents a National Service Personnel record.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the National Service Personnel record. Format: LDM0001, LDM0002, etc.",
+          "format": "string"
+        },
+        "serviceNumber": {
+          "type": "string",
+          "description": "Unique service number assigned to the NSP by the National Service Secretariat.",
+          "format": "string"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full name of the National Service Personnel."
+        },
+        "institution": {
+          "type": "string",
+          "description": "The institution the NSP is affiliated with."
+        },
+        "posting": {
+          "type": "string",
+          "description": "The location or department where the NSP is posted."
+        },
+        "createdDate": {
+          "type": "string",
+          "description": "The date the NSP record was created.",
+          "format": "date-time"
+        },
+        "lastUpdatedDate": {
+          "type": "string",
+          "description": "The date the NSP record was last updated.",
+          "format": "date-time"
+        },
+        "isDisabled": {
+          "type": "boolean",
+          "description": "Indicates if the NSP record is disabled (soft delete)."
+        },
+        "districtId": {
+          "type": "string",
+          "description": "Reference to District. (Relationship: District 1:N NationalServicePersonnel)"
+        },
+        "serviceYear": {
+          "type": "number",
+          "description": "The year the NSP is serving in."
+        }
+      },
+      "required": [
+        "id",
+        "serviceNumber",
+        "fullName",
+        "institution",
+        "posting",
+        "createdDate",
+        "lastUpdatedDate",
+        "isDisabled",
+        "districtId",
+        "serviceYear"
+      ]
+    },
+    "Submission": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Submission",
+      "type": "object",
+      "description": "Represents a monthly submission record for an NSP.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the submission record.",
+          "format": "string"
+        },
+        "nspId": {
+          "type": "string",
+          "description": "Reference to the NationalServicePersonnel. (Relationship: NationalServicePersonnel 1:N Submission)"
+        },
+        "month": {
+          "type": "number",
+          "description": "The month of the submission (1-12)."
+        },
+        "year": {
+          "type": "number",
+          "description": "The year of the submission."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The timestamp of the submission.",
+          "format": "date-time"
+        },
+        "deskOfficerName": {
+          "type": "string",
+          "description": "Name of the desk officer who marked the submission (optional)."
+        }
+      },
+      "required": [
+        "id",
+        "nspId",
+        "month",
+        "year",
+        "timestamp"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the system (Admin or Desk Officer).  Does not store authentication data.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user (Admin or Desk Officer)."
+        },
+        "districtId": {
+          "type": "string",
+          "description": "Reference to the District. (Relationship: District 1:N User)"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "role",
+        "districtId"
+      ]
+    },
+    "District": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "District",
+      "type": "object",
+      "description": "Represents a district office.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the district."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the district."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/districts/{districtId}",
+        "definition": {
+          "entityName": "District",
+          "schema": {
+            "$ref": "#/backend/entities/District"
+          },
+          "description": "Represents a district. Contains district metadata. Used for scoping users and NSPs.  Authorization: Only admins can create/modify districts.",
+          "params": [
+            {
+              "name": "districtId",
+              "description": "The unique identifier of the district."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "RoleAdmin",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection to store admin users. The existence of a document indicates admin rights.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the admin user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/districts/{districtId}/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Represents a user (Desk Officer or Admin) associated with a district. Includes denormalized 'districtId' for authorization independence. Authorization: Only admins can create/modify users within a district.",
+          "params": [
+            {
+              "name": "districtId",
+              "description": "The unique identifier of the district."
+            },
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/districts/{districtId}/personnel/{personnelId}",
+        "definition": {
+          "entityName": "NationalServicePersonnel",
+          "schema": {
+            "$ref": "#/backend/entities/NationalServicePersonnel"
+          },
+          "description": "Represents a National Service Personnel record. Includes denormalized 'districtId' for authorization independence. Authorization: Only users associated with the district (Admin or Desk Officer) can create/modify personnel records.",
+          "params": [
+            {
+              "name": "districtId",
+              "description": "The unique identifier of the district."
+            },
+            {
+              "name": "personnelId",
+              "description": "The unique identifier of the national service personnel."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/districts/{districtId}/personnel/{personnelId}/submissions/{submissionId}",
+        "definition": {
+          "entityName": "Submission",
+          "schema": {
+            "$ref": "#/backend/entities/Submission"
+          },
+          "description": "Represents a monthly submission record for an NSP. Authorization: Only users associated with the district (Admin or Desk Officer) can create/modify submission records for personnel in their district.",
+          "params": [
+            {
+              "name": "districtId",
+              "description": "The unique identifier of the district."
+            },
+            {
+              "name": "personnelId",
+              "description": "The unique identifier of the national service personnel."
+            },
+            {
+              "name": "submissionId",
+              "description": "The unique identifier of the submission."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the NSP management and submission system. It prioritizes authorization independence, clarity, and scalability.  The structure is optimized for the core requirements of NSP record management, monthly submission tracking, and role-based authentication. The key to authorization independence is the denormalization of the `districtId` from the `District` document into both `User` and `NationalServicePersonnel` documents, eliminating the need for `get()` calls in security rules to verify district access. This allows atomic operations and improves rule performance.\n\n**Authorization Independence:**\n\n*   `districtId` is denormalized into `User` and `NationalServicePersonnel` collections. This eliminates the need to fetch the district information in security rules, ensuring that authorization can be determined independently based on the user's role and the district affiliation of the NSP.\n\n**Structural Segregation & QAPs:**\n\n*   The use of path-based ownership for `NationalServicePersonnel` under `/districts/{districtId}/personnel/{personnelId}` ensures that only authorized users (Admins and Desk Officers of the affiliated district) can access or modify the data.\n*   Submissions are stored under the respective NSP record using path-based ownership `/districts/{districtId}/personnel/{personnelId}/submissions/{submissionId}` which ensures that only authorized users can access or modify the submissions.\n*   The `/roles_admin/{userId}` collection grants global admin privileges, avoiding the need for custom claims.\n\n**Data Clarity & Predictability:**\n\n*   The schema uses explicit naming conventions, such as `createdDate` and `lastUpdatedDate`, for timestamps and boolean `isDisabled` for soft deletes, avoiding implicit state definitions.\n\nThe structure supports the core features including:\n\n*   NSP Record Creation (Manual & Bulk Upload)\n*   NSP Record Editing\n*   Monthly Submission Tracking\n*   NSP Search\n*   Dashboard and Reporting\n*   Role-Based Authentication"
+  }
+}

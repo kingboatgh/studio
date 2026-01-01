@@ -1,0 +1,200 @@
+/**
+ * Core Philosophy: This ruleset enforces a hierarchical, role-based access control (RBAC) model centered around districts.
+ * A user's ability to read or write data is determined by their role (global Admin or district-level Desk Officer) and
+ * their association with a specific district. Anonymous users have no access.
+ *
+ * Data Structure: All operational data (personnel, submissions, district users) is hierarchically nested under the
+ * `/districts/{districtId}` collection. This provides a clear, scalable structure for scoping permissions. A separate
+ * top-level collection, `/roles_admin`, serves as a simple lookup to grant global admin privileges.
+ *
+ * Key Security Decisions:
+ * - Global Admins: A user is considered a global admin if a document with their UID exists in the `/roles_admin`
+ *   collection. Admins have read/write access to all data in the system.
+ * - District-Scoped Access: Non-admin users can only access data within the district they are assigned to. This is
+ *   verified by checking for the existence of their user document at `/districts/{districtId}/users/{request.auth.uid}`.
+ * - Denormalization for Authorization: The `districtId` is denormalized onto `personnel` and `user` documents. This avoids
+ *   costly `get()` calls in most rules, making them simpler and more performant. Authorization checks rely on the `districtId`
+ *   present in the document path.
+ * - Default Deny: All operations are denied by default and are only permitted through explicit `allow` statements.
+ *
+ * Structural Segregation:
+ * - Data is segregated by district using the `/districts/{districtId}` path structure.
+ * - Global admin roles are segregated into a dedicated `/roles_admin` collection, separating global permissions
+ *   from operational data.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------------------------------------------------------
+    // Helper Functions
+    // --------------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the requesting user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the user has global admin privileges.
+     * This is determined by the existence of their user document in the `roles_admin` collection.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * Checks if the user is a registered member of a specific district.
+     * This is determined by the existence of their user document in the district's `users` subcollection.
+     */
+    function isDistrictMember(districtId) {
+      return isSignedIn() && exists(/databases/$(database)/documents/districts/$(districtId)/users/$(request.auth.uid));
+    }
+
+    /**
+     * Aggregates authorization logic: allows access if the user is a global admin
+     * OR a registered member of the specified district.
+     */
+    function isAllowedInDistrict(districtId) {
+      return isAdmin() || isDistrictMember(districtId);
+    }
+    
+    /**
+     * On create, validates that the denormalized `districtId` in the new document's
+     * body matches the `districtId` from the collection path.
+     */
+    function hasValidDistrictIdOnCreate(districtId) {
+      return request.resource.data.districtId == districtId;
+    }
+    
+    /**
+     * On update, ensures the denormalized `districtId` cannot be changed.
+     */
+    function isDistrictIdImmutable() {
+      return request.resource.data.districtId == resource.data.districtId;
+    }
+    
+    /**
+     * On create, validates that the document's internal `id` field matches the
+     * `userId` from the document path.
+     */
+    function hasValidUserIdOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+    
+    /**
+     * On update, ensures the internal `id` field is immutable.
+     */
+    function isUserIdImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * On create, validates that the submission's `nspId` (National Service Personnel ID)
+     * matches the `personnelId` from the collection path.
+     */
+    function hasValidNspIdOnCreate(personnelId) {
+      return request.resource.data.nspId == personnelId;
+    }
+
+    /**
+     * On update, ensures the submission's `nspId` is immutable.
+     */
+    function isNspIdImmutable() {
+      return request.resource.data.nspId == resource.data.nspId;
+    }
+
+    // --------------------------------------------------------------------------------
+    // Collection Rules
+    // --------------------------------------------------------------------------------
+
+    /**
+     * @description Manages district records. Any signed-in user can read district information,
+     * but only global admins can create, modify, or delete districts.
+     * @path /districts/{districtId}
+     * @allow (get) Any signed-in user can read a district document.
+     * @deny (create) A non-admin user attempts to create a new district.
+     * @principle Enforces admin-only control over core structural data.
+     */
+    match /districts/{districtId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Manages the list of global administrators. Only existing admins can view
+     * or modify this collection. This prevents users from elevating their own privileges.
+     * @path /roles_admin/{userId}
+     * @allow (create) An admin adds another user to the `roles_admin` collection.
+     * @deny (get) A non-admin user attempts to read an admin document.
+     * @deny (list) A non-admin user attempts to list all admins.
+     * @principle Secures role management by restricting modifications to authorized admins.
+     */
+    match /roles_admin/{userId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Manages user records (Desk Officers) within a specific district.
+     * Only admins can create, update, or delete users. A user can read their own profile.
+     * @path /districts/{districtId}/users/{userId}
+     * @allow (create) An admin creates a new user within a district.
+     * @allow (get) A user with uid=`userId` reads their own profile document.
+     * @deny (update) A Desk Officer attempts to change their own role.
+     * @deny (list) A Desk Officer attempts to list all other users in their district.
+     * @principle Restricts user management to admins while allowing self-read access for profile information.
+     */
+    match /districts/{districtId}/users/{userId} {
+      allow get: if isAllowedInDistrict(districtId) || isOwner(userId);
+      allow list: if isAdmin();
+      allow create: if isAdmin() && hasValidDistrictIdOnCreate(districtId) && hasValidUserIdOnCreate(userId);
+      allow update: if isAdmin() && resource != null && isDistrictIdImmutable() && isUserIdImmutable();
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Manages National Service Personnel records scoped to a district.
+     * Access is granted to global admins and any user who is a member of that district.
+     * @path /districts/{districtId}/personnel/{personnelId}
+     * @allow (create) A Desk Officer in district `districtId` creates a new personnel record.
+     * @allow (list) An admin lists all personnel within a given district.
+     * @deny (update) A Desk Officer from a different district attempts to modify a personnel record.
+     * @principle Enforces district-level data isolation for personnel management.
+     */
+    match /districts/{districtId}/personnel/{personnelId} {
+      allow get, list: if isAllowedInDistrict(districtId);
+      allow create: if isAllowedInDistrict(districtId) && hasValidDistrictIdOnCreate(districtId);
+      allow update: if isAllowedInDistrict(districtId) && resource != null && isDistrictIdImmutable();
+      allow delete: if isAllowedInDistrict(districtId) && resource != null;
+    }
+
+    /**
+     * @description Manages monthly submissions for a specific National Service Personnel.
+     * Access permissions are inherited from the parent district, allowing admins and members of that
+     * district to manage submission records.
+     * @path /districts/{districtId}/personnel/{personnelId}/submissions/{submissionId}
+     * @allow (create) A Desk Officer in district `districtId` creates a new submission for a personnel member.
+     * @allow (get) An admin reads a specific submission record.
+     * @deny (delete) A Desk Officer from another district attempts to delete a submission record.
+     * @principle Ensures that submission data access is consistent with the personnel record it belongs to.
+     */
+    match /districts/{districtId}/personnel/{personnelId}/submissions/{submissionId} {
+      allow get, list: if isAllowedInDistrict(districtId);
+      allow create: if isAllowedInDistrict(districtId) && hasValidNspIdOnCreate(personnelId);
+      allow update: if isAllowedInDistrict(districtId) && resource != null && isNspIdImmutable();
+      allow delete: if isAllowedInDistrict(districtId) && resource != null;
+    }
+  }
+}
