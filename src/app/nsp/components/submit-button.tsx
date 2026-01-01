@@ -21,8 +21,8 @@ import {
 import { Input } from '@/components/ui/input';
 import type { NSP } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
-import { createSubmissionAction } from '@/lib/actions';
-import { useFormStatus } from 'react-dom';
+import { createSubmission } from '@/lib/data';
+import { useFirestore } from '@/firebase';
 
 const months = [
   { value: 1, label: 'January' }, { value: 2, label: 'February' },
@@ -35,9 +35,13 @@ const months = [
 
 export function SubmitButton({ nsp }: { nsp: NSP }) {
   const [open, setOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<number>();
   const [currentYear, setCurrentYear] = useState<number>();
   const { toast } = useToast();
+  const firestore = useFirestore();
+  // Assume a default district for now
+  const DISTRICT_ID = 'district1';
 
   useEffect(() => {
     const date = new Date();
@@ -45,21 +49,40 @@ export function SubmitButton({ nsp }: { nsp: NSP }) {
     setCurrentYear(date.getFullYear());
   }, []);
 
-  async function handleSubmission(formData: FormData) {
-    const result = await createSubmissionAction(nsp.id, formData);
+  async function handleSubmission(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsPending(true);
 
-    if (result.success) {
-      toast({
-        title: 'Submission Successful',
-        description: `${nsp.fullName}'s submission for ${months.find(m => m.value === Number(formData.get('month')))?.label} ${formData.get('year')} has been recorded.`,
-      });
-      setOpen(false);
-    } else {
+    const formData = new FormData(event.currentTarget);
+    const month = Number(formData.get('month'));
+    const year = Number(formData.get('year'));
+    const officerName = String(formData.get('officer'));
+
+    if (!month || !year || !officerName) {
       toast({
         variant: 'destructive',
         title: 'Submission Failed',
-        description: result.error,
+        description: 'Month, year, and officer name are required.',
       });
+      setIsPending(false);
+      return;
+    }
+
+    try {
+      await createSubmission(firestore, DISTRICT_ID, nsp.id, month, year, officerName);
+      toast({
+        title: 'Submission Successful',
+        description: `${nsp.fullName}'s submission for ${months.find(m => m.value === month)?.label} ${year} has been recorded.`,
+      });
+      setOpen(false);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Submission Failed',
+        description: error.message || 'An unknown error occurred.',
+      });
+    } finally {
+      setIsPending(false);
     }
   }
 
@@ -79,7 +102,7 @@ export function SubmitButton({ nsp }: { nsp: NSP }) {
             Confirm submission for <span className="font-semibold">{nsp.fullName} ({nsp.id})</span>.
           </DialogDescription>
         </DialogHeader>
-        <form action={handleSubmission}>
+        <form onSubmit={handleSubmission}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="month" className="text-right">Month</Label>
@@ -104,19 +127,12 @@ export function SubmitButton({ nsp }: { nsp: NSP }) {
             </div>
           </div>
           <DialogFooter>
-            <SubmitDialogButton/>
+             <Button type="submit" disabled={isPending} className="bg-primary hover:bg-primary/90">
+                {isPending ? 'Submitting...' : 'Confirm Submission'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-}
-
-function SubmitDialogButton() {
-    const { pending } = useFormStatus();
-    return (
-        <Button type="submit" disabled={pending} className="bg-primary hover:bg-primary/90">
-            {pending ? 'Submitting...' : 'Confirm Submission'}
-        </Button>
-    )
 }
