@@ -2,7 +2,7 @@
 
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Building, LayoutDashboard, Menu, Upload, Users } from 'lucide-react';
+import { Building, LayoutDashboard, Menu, Upload, Users, LogOut } from 'lucide-react';
 import NavLink from './nav-link';
 import Link from 'next/link';
 import {
@@ -14,7 +14,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 const getPageTitle = (pathname: string) => {
     if (pathname === '/') return 'Dashboard';
@@ -22,11 +24,24 @@ const getPageTitle = (pathname: string) => {
     if (pathname.startsWith('/nsp/upload')) return 'Bulk Upload NSP Records';
     if (pathname.startsWith('/nsp') && pathname.includes('/edit')) return 'Edit NSP Record';
     if (pathname.startsWith('/nsp')) return 'NSP Registry';
+    if (pathname.startsWith('/login')) return 'Login';
     return 'NSP Digital Submissions';
 }
 
 export default function Header() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const { user } = useUser();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
+  
+  if (!user) {
+    return null; // Don't render header on login page or if not authenticated
+  }
 
   return (
     <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30">
@@ -64,19 +79,19 @@ export default function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
               <Avatar>
-                <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User" />
-                <AvatarFallback>DA</AvatarFallback>
+                <AvatarImage src={user.photoURL ?? "https://i.pravatar.cc/150"} alt="User" />
+                <AvatarFallback>{user.email?.charAt(0).toUpperCase() ?? 'A'}</AvatarFallback>
               </Avatar>
               <span className="sr-only">Toggle user menu</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>District Admin</DropdownMenuLabel>
+            <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Logout</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
