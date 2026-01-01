@@ -25,37 +25,35 @@ export async function fetchNsps(db: Firestore, queryString?: string, page: numbe
   const querySnapshot = await getDocs(personnelCol);
   let allNSPs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
   
-  // 2. Fetch all submissions for the current month in the district
+  // 2. Enrich NSP data with submission status for the current month
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
   
-  // This query will scan all submissions within the district's personnel subcollections
-  const submissionsQuery = query(
-    collectionGroup(db, 'submissions'),
-    where('month', '==', currentMonth),
-    where('year', '==', currentYear)
+  const enrichedNSPs = await Promise.all(
+    allNSPs.map(async (nsp) => {
+      const submissionId = `${currentYear}-${currentMonth}`;
+      const subDocRef = doc(db, `districts/${DISTRICT_ID}/personnel/${nsp.id}/submissions`, submissionId);
+      const subDocSnap = await getDoc(subDocRef);
+      return {
+        ...nsp,
+        hasSubmittedThisMonth: subDocSnap.exists(),
+      };
+    })
   );
   
-  const submissionsSnapshot = await getDocs(submissionsQuery);
-  const submittedNspIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().nspId));
+  let filteredNSPs = enrichedNSPs;
 
-  // 3. Enrich NSP data with submission status
-  allNSPs = allNSPs.map(nsp => ({
-    ...nsp,
-    hasSubmittedThisMonth: submittedNspIds.has(nsp.id)
-  }));
-  
-  // 4. Filter if a search query is provided
+  // 3. Filter if a search query is provided
   if (queryString) {
     const lowercasedQuery = queryString.toLowerCase();
-    allNSPs = allNSPs.filter(nsp => 
+    filteredNSPs = enrichedNSPs.filter(nsp => 
       nsp.fullName.toLowerCase().includes(lowercasedQuery) ||
       (nsp.id && nsp.id.toLowerCase().includes(lowercasedQuery)) ||
       nsp.serviceNumber.toLowerCase().includes(lowercasedQuery)
     );
   }
 
-  return { nsps: allNSPs, total: allNSPs.length };
+  return { nsps: filteredNSPs, total: filteredNSPs.length };
 }
 
 export async function fetchNspById(db: Firestore, id: string): Promise<NSP | undefined> {
@@ -78,15 +76,15 @@ export async function getDashboardStats(db: Firestore): Promise<DashboardStats> 
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
 
-    const submissionsQuery = query(
-      collectionGroup(db, 'submissions'),
-      where('month', '==', currentMonth),
-      where('year', '==', currentYear)
-    );
-    const submissionsSnapshot = await getDocs(submissionsQuery);
-    // Filter to only include submissions from personnel in the current district.
-    const districtNspIds = new Set(personnelSnapshot.docs.map(doc => doc.id));
-    const submittedThisMonth = submissionsSnapshot.docs.filter(doc => districtNspIds.has(doc.data().nspId)).length;
+    let submittedThisMonth = 0;
+    for (const nspDoc of personnelSnapshot.docs) {
+        const submissionId = `${currentYear}-${currentMonth}`;
+        const subDocRef = doc(db, `districts/${DISTRICT_ID}/personnel/${nspDoc.id}/submissions`, submissionId);
+        const subDocSnap = await getDoc(subDocRef);
+        if (subDocSnap.exists()) {
+            submittedThisMonth++;
+        }
+    }
     
     return {
         totalNsps,
@@ -135,17 +133,15 @@ export async function updateNSP(db: Firestore, id: string, data: Partial<Omit<NS
 
 export async function createSubmission(db: Firestore, districtId: string, nspId: string, month: number, year: number, officerName: string) {
     const submissionPath = `/districts/${districtId}/personnel/${nspId}/submissions`;
-    const submissionsCol = collection(db, submissionPath);
     
-    const q = query(submissionsCol, where('month', '==', month), where('year', '==', year));
-    const existing = await getDocs(q);
-
-    if (!existing.empty) {
-        throw new Error('Submission for this month already exists.');
-    }
-
     const submissionId = `${year}-${month}`;
     const submissionRef = doc(db, submissionPath, submissionId);
+
+    const docSnap = await getDoc(submissionRef);
+
+    if (docSnap.exists()) {
+        throw new Error('Submission for this month already exists.');
+    }
 
     const newSubmission = {
         id: submissionId,
@@ -184,12 +180,12 @@ export async function fetchSubmissionsForMonth(db: Firestore, month: number, yea
   const enrichedSubmissions: SubmissionWithNSP[] = [];
 
   for (const nsp of nsps) {
-    const submissionCol = collection(db, `districts/${DISTRICT_ID}/personnel/${nsp.id}/submissions`);
-    const q = query(submissionCol, where('month', '==', month), where('year', '==', year));
-    const submissionSnap = await getDocs(q);
+    const submissionId = `${year}-${month}`;
+    const subDocRef = doc(db, `districts/${DISTRICT_ID}/personnel/${nsp.id}/submissions`, submissionId);
+    const subDocSnap = await getDoc(subDocRef);
     
-    if (!submissionSnap.empty) {
-      const sub = submissionSnap.docs[0].data() as Submission;
+    if (subDocSnap.exists()) {
+      const sub = subDocSnap.data() as Submission;
       enrichedSubmissions.push({
         ...sub,
         nspFullName: nsp.fullName,
