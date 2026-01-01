@@ -109,30 +109,25 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the system (Admin or Desk Officer).  Does not store authentication data.",
+      "description": "Represents a user of the system. Does not store authentication data.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user."
+          "description": "Unique identifier for the user (matches auth uid)."
         },
         "username": {
           "type": "string",
           "description": "The username of the user."
         },
-        "role": {
-          "type": "string",
-          "description": "The role of the user (Admin or Desk Officer)."
-        },
-        "districtId": {
-          "type": "string",
-          "description": "Reference to the District. (Relationship: District 1:N User)"
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Indicates if the user has administrative privileges."
         }
       },
       "required": [
         "id",
         "username",
-        "role",
-        "districtId"
+        "isAdmin"
       ]
     },
     "District": {
@@ -171,7 +166,7 @@
           "schema": {
             "$ref": "#/backend/entities/District"
           },
-          "description": "Represents a district. Contains district metadata. Used for scoping users and NSPs.  Authorization: Only admins can create/modify districts.",
+          "description": "Represents a district. Contains district metadata. Used for scoping users and NSPs.",
           "params": [
             {
               "name": "districtId",
@@ -181,19 +176,15 @@
         }
       },
       {
-        "path": "/roles_admin/{userId}",
+        "path": "/admins/{userId}",
         "definition": {
-          "entityName": "RoleAdmin",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Collection to store admin users. The existence of a document indicates admin rights.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the admin user."
-            }
-          ]
+            "entityName": "User",
+            "schema": { "$ref": "#/backend/entities/User" },
+            "description": "Collection to store admin user flags. The existence of a document with isAdmin:true indicates admin rights.",
+            "params": [{
+                "name": "userId",
+                "description": "The unique identifier of the user (matches auth uid)."
+            }]
         }
       },
       {
@@ -203,7 +194,7 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Represents a user (Desk Officer or Admin) associated with a district. Includes denormalized 'districtId' for authorization independence. Authorization: Only admins can create/modify users within a district.",
+          "description": "Represents a user (Desk Officer or Admin) associated with a district.",
           "params": [
             {
               "name": "districtId",
@@ -223,7 +214,7 @@
           "schema": {
             "$ref": "#/backend/entities/NationalServicePersonnel"
           },
-          "description": "Represents a National Service Personnel record. Includes denormalized 'districtId' for authorization independence. Authorization: Only users associated with the district (Admin or Desk Officer) can create/modify personnel records.",
+          "description": "Represents a National Service Personnel record.",
           "params": [
             {
               "name": "districtId",
@@ -243,7 +234,7 @@
           "schema": {
             "$ref": "#/backend/entities/Submission"
           },
-          "description": "Represents a monthly submission record for an NSP. Authorization: Only users associated with the district (Admin or Desk Officer) can create/modify submission records for personnel in their district.",
+          "description": "Represents a monthly submission record for an NSP.",
           "params": [
             {
               "name": "districtId",
@@ -261,6 +252,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the NSP management and submission system. It prioritizes authorization independence, clarity, and scalability.  The structure is optimized for the core requirements of NSP record management, monthly submission tracking, and role-based authentication. The key to authorization independence is the denormalization of the `districtId` from the `District` document into both `User` and `NationalServicePersonnel` documents, eliminating the need for `get()` calls in security rules to verify district access. This allows atomic operations and improves rule performance.\n\n**Authorization Independence:**\n\n*   `districtId` is denormalized into `User` and `NationalServicePersonnel` collections. This eliminates the need to fetch the district information in security rules, ensuring that authorization can be determined independently based on the user's role and the district affiliation of the NSP.\n\n**Structural Segregation & QAPs:**\n\n*   The use of path-based ownership for `NationalServicePersonnel` under `/districts/{districtId}/personnel/{personnelId}` ensures that only authorized users (Admins and Desk Officers of the affiliated district) can access or modify the data.\n*   Submissions are stored under the respective NSP record using path-based ownership `/districts/{districtId}/personnel/{personnelId}/submissions/{submissionId}` which ensures that only authorized users can access or modify the submissions.\n*   The `/roles_admin/{userId}` collection grants global admin privileges, avoiding the need for custom claims.\n\n**Data Clarity & Predictability:**\n\n*   The schema uses explicit naming conventions, such as `createdDate` and `lastUpdatedDate`, for timestamps and boolean `isDisabled` for soft deletes, avoiding implicit state definitions.\n\nThe structure supports the core features including:\n\n*   NSP Record Creation (Manual & Bulk Upload)\n*   NSP Record Editing\n*   Monthly Submission Tracking\n*   NSP Search\n*   Dashboard and Reporting\n*   Role-Based Authentication"
+    "reasoning": "The Firestore data structure is designed to support the NSP management and submission system. The structure is optimized for the core requirements of NSP record management, monthly submission tracking, and role-based authentication. The use of a top-level `admins` collection provides a simple and secure way to manage admin privileges without relying on custom claims."
   }
 }
