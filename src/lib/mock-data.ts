@@ -1,8 +1,10 @@
 import type { NSP, Submission } from './definitions';
+import { Timestamp } from 'firebase/firestore';
 
-// Function to generate a zero-padded ID
+// This file is now for reference and seeding, but not directly used by the data.ts functions.
+
 let lastId = 6000;
-const generateNspId = () => {
+export const generateNspId = () => {
   lastId++;
   return `LDM${lastId.toString().padStart(4, '0')}`;
 };
@@ -24,39 +26,24 @@ const samplePostings = [
 const firstNames = ['Kwame', 'Ama', 'Kofi', 'Adwoa', 'Yaw', 'Esi', 'Kwadwo', 'Afia'];
 const lastNames = ['Nkrumah', 'Adu', 'Mensah', 'Osei', 'Boateng', 'Asante', 'Yeboah'];
 
-const generateMockNSPs = (count: number): NSP[] => {
-  const nsps: NSP[] = [];
+const generateMockNSPs = (count: number): Omit<NSP, 'id'>[] => {
+  const nsps: Omit<NSP, 'id'>[] = [];
+  const currentTimestamp = Timestamp.now();
+
   for (let i = 1; i <= count; i++) {
-    const createdAt = new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString();
     nsps.push({
-      id: `LDM${(6000 + i).toString().padStart(4, '0')}`,
       serviceNumber: `NSS${Math.floor(100000 + Math.random() * 900000)}`,
       fullName: `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`,
       institution: sampleInstitutions[Math.floor(Math.random() * sampleInstitutions.length)],
       posting: samplePostings[Math.floor(Math.random() * samplePostings.length)],
-      status: 'active',
-      createdAt,
-      updatedAt: createdAt,
+      isDisabled: false,
+      createdDate: currentTimestamp,
+      lastUpdatedDate: currentTimestamp,
+      districtId: 'district1',
+      serviceYear: new Date().getFullYear(),
     });
   }
   return nsps;
 };
 
-const mockNSPs: NSP[] = generateMockNSPs(50);
-const mockSubmissions: Submission[] = [];
-
-// Let's assume some are submitted for the current month
-const currentMonth = new Date().getMonth() + 1;
-const currentYear = new Date().getFullYear();
-for (let i = 0; i < 20; i++) {
-    mockSubmissions.push({
-        id: `sub_${i}`,
-        nspId: mockNSPs[i].id,
-        month: currentMonth,
-        year: currentYear,
-        submittedAt: new Date().toISOString(),
-        officerName: 'Desk Officer 1',
-    });
-}
-
-export { mockNSPs, mockSubmissions, generateNspId };
+export const mockNSPsForSeeding = generateMockNSPs(10);

@@ -1,21 +1,25 @@
+import { Timestamp } from 'firebase/firestore';
+
 export type NSP = {
-  id: string; // LDM0001
+  id: string; // Document ID from Firestore
   serviceNumber: string;
   fullName: string;
   institution: string;
   posting: string;
-  status: 'active' | 'inactive';
-  createdAt: string; // ISO date string
-  updatedAt: string; // ISO date string
+  isDisabled: boolean;
+  createdDate: Timestamp;
+  lastUpdatedDate: Timestamp;
+  districtId: string;
+  serviceYear: number;
 };
 
 export type Submission = {
-  id: string;
+  id: string; // Document ID
   nspId: string;
   month: number;
   year: number;
-  submittedAt: string; // ISO date string
-  officerName?: string;
+  timestamp: Timestamp;
+  deskOfficerName?: string;
 };
 
 export type DashboardStats = {

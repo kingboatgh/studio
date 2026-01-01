@@ -1,10 +1,30 @@
+'use client';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getDashboardStats } from "@/lib/data";
 import { Users, CheckCircle, AlertCircle, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { DashboardStats } from '@/lib/definitions';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default async function DashboardPage() {
-  const stats = await getDashboardStats();
+export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const dashboardStats = await getDashboardStats();
+        setStats(dashboardStats);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats:", error);
+        setStats({ totalNsps: 0, submittedThisMonth: 0, pendingThisMonth: 0 });
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStats();
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -15,10 +35,14 @@ export default async function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalNsps.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              Total active personnel in the system
-            </p>
+            {loading ? <Skeleton className="h-8 w-24" /> : (
+              <>
+                <div className="text-2xl font-bold">{stats?.totalNsps.toLocaleString() ?? 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Total active personnel in the system
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -27,10 +51,14 @@ export default async function DashboardPage() {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.submittedThisMonth.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              For the current submission cycle
-            </p>
+            {loading ? <Skeleton className="h-8 w-24" /> : (
+              <>
+                <div className="text-2xl font-bold">{stats?.submittedThisMonth.toLocaleString() ?? 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  For the current submission cycle
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -39,10 +67,14 @@ export default async function DashboardPage() {
             <AlertCircle className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingThisMonth.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              Have not submitted for this cycle
-            </p>
+             {loading ? <Skeleton className="h-8 w-24" /> : (
+              <>
+                <div className="text-2xl font-bold">{stats?.pendingThisMonth.toLocaleString() ?? 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Have not submitted for this cycle
+                </p>
+              </>
+             )}
           </CardContent>
         </Card>
       </div>

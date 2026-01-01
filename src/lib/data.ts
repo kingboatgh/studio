@@ -1,35 +1,91 @@
+'use server';
 import { NSP, Submission, DashboardStats } from './definitions';
-import { mockNSPs, mockSubmissions, generateNspId } from './mock-data';
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  doc, 
+  getDoc,
+  addDoc,
+  setDoc,
+  query,
+  where,
+  Timestamp,
+  writeBatch,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { initializeFirebase } from '@/firebase';
 
-const currentMonth = new Date().getMonth() + 1;
-const currentYear = new Date().getFullYear();
+// Assume a default district for now
+const DISTRICT_ID = 'district1';
+
+async function getDb() {
+    const { firestore } = initializeFirebase();
+    return firestore;
+}
 
 // In a real app, this would query Firestore
-export async function fetchNsps(query?: string, page: number = 1): Promise<{nsps: NSP[], total: number}> {
-  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+export async function fetchNsps(queryString?: string, page: number = 1): Promise<{nsps: NSP[], total: number}> {
+  const db = await getDb();
+  const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
-  let filteredNSPs = mockNSPs;
-  if (query) {
-    const lowercasedQuery = query.toLowerCase();
-    filteredNSPs = mockNSPs.filter(nsp => 
+  let q = query(personnelCol);
+
+  // Note: Firestore doesn't support case-insensitive queries on the backend easily.
+  // For a real app, you would typically store a lowercased version of fields you want to search on.
+  // Here we fetch all and filter in memory, which is not scalable.
+  const querySnapshot = await getDocs(q);
+  let allNSPs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
+  
+  if (queryString) {
+    const lowercasedQuery = queryString.toLowerCase();
+    allNSPs = allNSPs.filter(nsp => 
       nsp.fullName.toLowerCase().includes(lowercasedQuery) ||
-      nsp.id.toLowerCase().includes(lowercasedQuery) ||
+      (nsp.id && nsp.id.toLowerCase().includes(lowercasedQuery)) ||
       nsp.serviceNumber.toLowerCase().includes(lowercasedQuery)
     );
   }
 
-  return { nsps: filteredNSPs, total: filteredNSPs.length };
+  return { nsps: allNSPs, total: allNSPs.length };
 }
 
 export async function fetchNspById(id: string): Promise<NSP | undefined> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return mockNSPs.find(nsp => nsp.id === id);
+    const db = await getDb();
+    const docRef = doc(db, 'districts', DISTRICT_ID, 'personnel', id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as NSP;
+    } else {
+        return undefined;
+    }
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const totalNsps = mockNSPs.filter(n => n.status === 'active').length;
-    const submittedThisMonth = mockSubmissions.filter(s => s.month === currentMonth && s.year === currentYear).length;
+    const db = await getDb();
+    const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
+
+    const personnelSnapshot = await getDocs(query(personnelCol, where('isDisabled', '==', false)));
+    const totalNsps = personnelSnapshot.size;
+
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+    
+    // This is a simplified query. For a real app, submissions might need a more complex structure
+    // to query efficiently, e.g., a top-level submissions collection with districtId.
+    // The current structure `/districts/{districtId}/personnel/{personnelId}/submissions/{submissionId}` is not efficient to query across all personnel.
+    // For this example, we will fetch all submissions and filter, which is not scalable.
+    const personnelDocs = await getDocs(personnelCol);
+    let submittedThisMonth = 0;
+    for(const p of personnelDocs.docs){
+        if (p.data().isDisabled) continue;
+        const submissionThisMonthQuery = query(collection(db, `districts/${DISTRICT_ID}/personnel/${p.id}/submissions`), where('month', '==', currentMonth), where('year', '==', currentYear));
+        const submissionThisMonthSnapshot = await getDocs(submissionThisMonthQuery);
+        if(submissionThisMonthSnapshot.size > 0){
+            submittedThisMonth++;
+        }
+    }
+
     return {
         totalNsps,
         submittedThisMonth,
@@ -37,56 +93,88 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     };
 }
 
-export async function getSubmissionsForNSP(nspId: string): Promise<Submission[]> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return mockSubmissions.filter(s => s.nspId === nspId);
-}
 
-export async function createNewNSP(data: Omit<NSP, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<NSP> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const newNsp: NSP = {
-        id: generateNspId(),
+export async function createNewNSP(data: Omit<NSP, 'id' | 'createdDate' | 'lastUpdatedDate' | 'serviceYear'> & { districtId: string }) {
+    const db = await getDb();
+    const newId = generateNspId();
+    const personnelRef = doc(db, 'districts', data.districtId, 'personnel', newId);
+    
+    const newNspData = {
         ...data,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        id: newId,
+        serviceYear: new Date().getFullYear(),
+        createdDate: serverTimestamp(),
+        lastUpdatedDate: serverTimestamp(),
     };
-    mockNSPs.unshift(newNsp);
-    return newNsp;
+    
+    await setDoc(personnelRef, newNspData);
 }
 
-export async function updateNSP(id: string, data: Partial<Omit<NSP, 'id'>>): Promise<NSP> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const nspIndex = mockNSPs.findIndex(n => n.id === id);
-    if (nspIndex === -1) throw new Error('NSP not found');
-
-    mockNSPs[nspIndex] = { ...mockNSPs[nspIndex], ...data, updatedAt: new Date().toISOString() };
-    return mockNSPs[nspIndex];
+function generateNspId() {
+  const prefix = 'LDM';
+  const randomNumber = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `${prefix}${randomNumber}`;
 }
 
-export async function createSubmission(nspId: string, month: number, year: number, officerName: string): Promise<Submission> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const existing = mockSubmissions.find(s => s.nspId === nspId && s.month === month && s.year === year);
-    if (existing) {
+export async function updateNSP(id: string, data: Partial<Omit<NSP, 'id'>>) {
+    if (!data.districtId) {
+        throw new Error("District ID is required to update NSP record.");
+    }
+    const db = await getDb();
+    const docRef = doc(db, 'districts', data.districtId, 'personnel', id);
+    
+    const updateData = {
+        ...data,
+        lastUpdatedDate: serverTimestamp(),
+    };
+
+    await setDoc(docRef, updateData, { merge: true });
+}
+
+export async function createSubmission(districtId: string, nspId: string, month: number, year: number, officerName: string) {
+    const db = await getDb();
+    const submissionPath = `/districts/${districtId}/personnel/${nspId}/submissions`;
+    const submissionsCol = collection(db, submissionPath);
+    
+    const q = query(submissionsCol, where('month', '==', month), where('year', '==', year));
+    const existing = await getDocs(q);
+
+    if (!existing.empty) {
         throw new Error('Submission for this month already exists.');
     }
 
-    const newSubmission: Submission = {
-        id: `sub_${mockSubmissions.length + 1}`,
+    const submissionId = `${year}-${month}`;
+    const submissionRef = doc(db, submissionPath, submissionId);
+
+    const newSubmission = {
+        id: submissionId,
         nspId,
         month,
         year,
-        submittedAt: new Date().toISOString(),
-        officerName,
+        timestamp: serverTimestamp(),
+        deskOfficerName: officerName,
     };
-    mockSubmissions.push(newSubmission);
-    return newSubmission;
+    await setDoc(submissionRef, newSubmission);
 }
 
 export async function checkServiceNumberUniqueness(serviceNumber: string, currentNspId?: string): Promise<boolean> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  const foundNSP = mockNSPs.find(n => n.serviceNumber === serviceNumber);
-  if (!foundNSP) return true; // Unique
-  if (currentNspId && foundNSP.id === currentNspId) return true; // It's the same record being edited
-  return false; // Not unique
+    const db = await getDb();
+    // This query needs to check across all districts, which is inefficient.
+    // A better schema would have a top-level collection of service numbers for quick lookups.
+    // For now, we query only the default district.
+    const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
+    const q = query(personnelCol, where('serviceNumber', '==', serviceNumber));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return true; // Unique
+    }
+
+    if (currentNspId) {
+        // If we are updating, it's ok if the number belongs to the current user.
+        const isSelf = querySnapshot.docs.every(doc => doc.id === currentNspId);
+        return isSelf;
+    }
+  
+    return false; // Not unique
 }

@@ -38,8 +38,8 @@ export function NSPTable({ nsps }: { nsps: NSP[] }) {
                 <TableCell>{nsp.fullName}</TableCell>
                 <TableCell className="hidden md:table-cell">{nsp.institution}</TableCell>
                 <TableCell>
-                  <Badge variant={nsp.status === 'active' ? 'secondary' : 'destructive'}>
-                    {nsp.status}
+                  <Badge variant={!nsp.isDisabled ? 'secondary' : 'destructive'}>
+                    {!nsp.isDisabled ? 'Active' : 'Inactive'}
                   </Badge>
                 </TableCell>
                 <TableCell>

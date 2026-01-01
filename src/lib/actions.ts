@@ -5,13 +5,16 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createNewNSP, updateNSP, createSubmission, checkServiceNumberUniqueness } from './data';
 
+// Assume a default district for now
+const DISTRICT_ID = 'district1';
+
 const FormSchema = z.object({
     id: z.string(),
     serviceNumber: z.string({ invalid_type_error: 'Please enter a service number.' }).min(1, 'Service number is required.'),
     fullName: z.string().min(1, 'Full name is required.'),
     institution: z.string().min(1, 'Institution is required.'),
     posting: z.string().min(1, 'Posting is required.'),
-    status: z.enum(['active', 'inactive'])
+    isDisabled: z.coerce.boolean()
 });
 
 const CreateNSP = FormSchema.omit({ id: true });
@@ -23,7 +26,7 @@ export type State = {
         fullName?: string[];
         institution?: string[];
         posting?: string[];
-        status?: string[];
+        isDisabled?: string[];
     };
     message?: string | null;
 };
@@ -34,7 +37,7 @@ export async function createNspAction(prevState: State, formData: FormData) {
         fullName: formData.get('fullName'),
         institution: formData.get('institution'),
         posting: formData.get('posting'),
-        status: formData.get('status') || 'active',
+        isDisabled: formData.get('isDisabled') || false,
     });
 
     if (!validatedFields.success) {
@@ -55,7 +58,7 @@ export async function createNspAction(prevState: State, formData: FormData) {
     }
 
     try {
-        await createNewNSP({ serviceNumber, ...rest });
+        await createNewNSP({ serviceNumber, districtId: DISTRICT_ID, ...rest });
     } catch (error) {
         return { message: 'Database Error: Failed to Create NSP.' };
     }
@@ -71,7 +74,7 @@ export async function updateNspAction(id: string, prevState: State, formData: Fo
         fullName: formData.get('fullName'),
         institution: formData.get('institution'),
         posting: formData.get('posting'),
-        status: formData.get('status'),
+        isDisabled: formData.get('isDisabled'),
     });
 
     if (!validatedFields.success) {
@@ -92,7 +95,7 @@ export async function updateNspAction(id: string, prevState: State, formData: Fo
     }
 
     try {
-        await updateNSP(id, { serviceNumber, ...rest });
+        await updateNSP(id, { serviceNumber, districtId: DISTRICT_ID, ...rest });
     } catch (error) {
         return { message: 'Database Error: Failed to Update NSP.' };
     }
@@ -112,7 +115,7 @@ export async function createSubmissionAction(nspId: string, formData: FormData) 
             return { success: false, error: 'Month, year, and officer name are required.' };
         }
         
-        await createSubmission(nspId, month, year, officerName);
+        await createSubmission(DISTRICT_ID, nspId, month, year, officerName);
         revalidatePath('/nsp');
         revalidatePath('/');
         return { success: true };

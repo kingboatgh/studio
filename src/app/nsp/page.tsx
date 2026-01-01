@@ -1,21 +1,18 @@
+'use client';
 import { fetchNsps } from "@/lib/data";
 import { NSPTable } from "./components/nsp-table";
 import { AddNSPButton } from "./components/buttons";
 import Search from "./components/search";
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { NSP } from "@/lib/definitions";
+import { useSearchParams } from "next/navigation";
 
-export default async function NspRegistryPage({
-  searchParams
-}: {
-  searchParams?: {
-    query?: string;
-    page?: string;
-  }
-}) {
-  const query = searchParams?.query || '';
-  const currentPage = Number(searchParams?.page) || 1;
+export default function NspRegistryPage() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get('query') || '';
+  const currentPage = Number(searchParams.get('page')) || 1;
   
   return (
     <Card>
@@ -32,9 +29,26 @@ export default async function NspRegistryPage({
   );
 }
 
-async function NSPList({query, currentPage}: {query: string, currentPage: number}) {
-  const { nsps, total } = await fetchNsps(query, currentPage);
-  return <NSPTable nsps={nsps} />;
+function NSPList({query, currentPage}: {query: string, currentPage: number}) {
+  const [data, setData] = useState<{nsps: NSP[], total: number} | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function getNsps() {
+        setLoading(true);
+        const result = await fetchNsps(query, currentPage);
+        setData(result);
+        setLoading(false);
+    }
+    getNsps();
+  }, [query, currentPage]);
+
+
+  if (loading) {
+    return <TableSkeleton />;
+  }
+
+  return <NSPTable nsps={data?.nsps ?? []} />;
 }
 
 function TableSkeleton() {

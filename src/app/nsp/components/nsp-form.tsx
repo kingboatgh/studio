@@ -70,14 +70,14 @@ export function NSPForm({ nsp }: { nsp?: NSP }) {
           </div>
            {nsp && (
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select name="status" defaultValue={nsp.status}>
+              <Label htmlFor="isDisabled">Status</Label>
+              <Select name="isDisabled" defaultValue={String(nsp.isDisabled)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="false">Active</SelectItem>
+                  <SelectItem value="true">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
