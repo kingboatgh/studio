@@ -1,5 +1,5 @@
 'use client';
-import { useFormState } from 'react-dom';
+import { useActionState } from 'react';
 import {
   Card,
   CardContent,
@@ -28,7 +28,7 @@ import { AlertCircle } from 'lucide-react';
 export function NSPForm({ nsp }: { nsp?: NSP }) {
   const initialState: State = { message: null, errors: {} };
   const actionToRun = nsp ? updateNspAction.bind(null, nsp.id) : createNspAction;
-  const [state, dispatch] = useFormState(actionToRun, initialState);
+  const [state, dispatch] = useActionState(actionToRun, initialState);
 
   return (
     <form action={dispatch}>
