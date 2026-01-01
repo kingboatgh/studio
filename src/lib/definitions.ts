@@ -22,6 +22,11 @@ export type Submission = {
   deskOfficerName?: string;
 };
 
+export type SubmissionWithNSP = Submission & {
+  nspFullName: string;
+  nspServiceNumber: string;
+}
+
 export type DashboardStats = {
   totalNsps: number;
   submittedThisMonth: number;

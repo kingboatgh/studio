@@ -1,4 +1,4 @@
-import type { NSP, Submission, DashboardStats } from './definitions';
+import type { NSP, Submission, DashboardStats, SubmissionWithNSP } from './definitions';
 import { 
   collection, 
   getDocs, 
@@ -11,6 +11,7 @@ import {
   addDoc,
   writeBatch,
   type Firestore,
+  collectionGroup,
 } from 'firebase/firestore';
 
 // Assume a default district for now
@@ -59,20 +60,17 @@ export async function getDashboardStats(db: Firestore): Promise<DashboardStats> 
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
     
-    // This is a simplified query. For a real app, submissions might need a more complex structure
-    // to query efficiently, e.g., a top-level submissions collection with districtId.
-    // The current structure `/districts/{districtId}/personnel/{personnelId}/submissions/{submissionId}` is not efficient to query across all personnel.
-    // For this example, we will fetch all submissions and filter, which is not scalable.
-    const personnelDocs = await getDocs(personnelCol);
-    let submittedThisMonth = 0;
-    for(const p of personnelDocs.docs){
-        if (p.data().isDisabled) continue;
-        const submissionThisMonthQuery = query(collection(db, `districts/${DISTRICT_ID}/personnel/${p.id}/submissions`), where('month', '==', currentMonth), where('year', '==', currentYear));
-        const submissionThisMonthSnapshot = await getDocs(submissionThisMonthQuery);
-        if(submissionThisMonthSnapshot.size > 0){
-            submittedThisMonth++;
-        }
-    }
+    // This query is inefficient. It scans all submissions. A better data model would be needed for production.
+    const submissionsQuery = query(
+      collectionGroup(db, 'submissions'),
+      where('month', '==', currentMonth),
+      where('year', '==', currentYear)
+    );
+    
+    const submissionsSnapshot = await getDocs(submissionsQuery);
+    
+    // This assumes submissions are only for the default district. This logic would need refinement in a multi-district app.
+    const submittedThisMonth = submissionsSnapshot.size;
 
     return {
         totalNsps,
@@ -162,4 +160,32 @@ export async function checkServiceNumberUniqueness(db: Firestore, serviceNumber:
     }
   
     return false; // Not unique
+}
+
+export async function fetchSubmissionsForMonth(db: Firestore, month: number, year: number): Promise<SubmissionWithNSP[]> {
+  const submissionsQuery = query(
+    collectionGroup(db, 'submissions'),
+    where('month', '==', month),
+    where('year', '==', year)
+  );
+
+  const submissionSnap = await getDocs(submissionsQuery);
+  const submissions = submissionSnap.docs.map(d => d.data() as Submission);
+
+  const enrichedSubmissions: SubmissionWithNSP[] = [];
+
+  for (const sub of submissions) {
+    const nspDocRef = doc(db, 'districts', DISTRICT_ID, 'personnel', sub.nspId);
+    const nspSnap = await getDoc(nspDocRef);
+    if (nspSnap.exists()) {
+      const nspData = nspSnap.data() as NSP;
+      enrichedSubmissions.push({
+        ...sub,
+        nspFullName: nspData.fullName,
+        nspServiceNumber: nspData.serviceNumber
+      });
+    }
+  }
+
+  return enrichedSubmissions;
 }
