@@ -1,4 +1,3 @@
-
 import type { NSP, Submission, DashboardStats } from './definitions';
 import { 
   collection, 
@@ -9,13 +8,14 @@ import {
   query,
   where,
   serverTimestamp,
+  addDoc,
+  writeBatch,
   type Firestore,
 } from 'firebase/firestore';
 
 // Assume a default district for now
 const DISTRICT_ID = 'district1';
 
-// In a real app, this would query Firestore
 export async function fetchNsps(db: Firestore, queryString?: string, page: number = 1): Promise<{nsps: NSP[], total: number}> {
   const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
@@ -82,13 +82,14 @@ export async function getDashboardStats(db: Firestore): Promise<DashboardStats> 
 }
 
 
-export async function createNewNSP(db: Firestore, data: Omit<NSP, 'id' | 'createdDate' | 'lastUpdatedDate' | 'serviceYear'> & { districtId: string }) {
+export async function createNewNSP(db: Firestore, data: Omit<NSP, 'id' | 'createdDate' | 'lastUpdatedDate' | 'serviceYear' | 'isDisabled'> & { districtId: string }) {
     const newId = generateNspId();
     const personnelRef = doc(db, 'districts', data.districtId, 'personnel', newId);
     
     const newNspData = {
         ...data,
         id: newId,
+        isDisabled: false,
         serviceYear: new Date().getFullYear(),
         createdDate: serverTimestamp(),
         lastUpdatedDate: serverTimestamp(),
