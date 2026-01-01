@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { NSP } from "@/lib/definitions";
 import { useSearchParams } from "next/navigation";
+import { useFirestore } from "@/firebase";
 
 export default function NspRegistryPage() {
   const searchParams = useSearchParams();
@@ -32,16 +33,17 @@ export default function NspRegistryPage() {
 function NSPList({query, currentPage}: {query: string, currentPage: number}) {
   const [data, setData] = useState<{nsps: NSP[], total: number} | null>(null);
   const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
 
   useEffect(() => {
     async function getNsps() {
         setLoading(true);
-        const result = await fetchNsps(query, currentPage);
+        const result = await fetchNsps(firestore, query, currentPage);
         setData(result);
         setLoading(false);
     }
     getNsps();
-  }, [query, currentPage]);
+  }, [query, currentPage, firestore]);
 
 
   if (loading) {

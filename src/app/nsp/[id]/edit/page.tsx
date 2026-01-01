@@ -6,15 +6,17 @@ import { NSPForm } from '../../components/nsp-form';
 import { notFound } from 'next/navigation';
 import type { NSP } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFirestore } from '@/firebase';
 
 export default function EditNSPPage({ params }: { params: { id: string } }) {
   const id = params.id;
   const [nsp, setNsp] = useState<NSP | null>(null);
   const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
 
   useEffect(() => {
     async function getNsp() {
-      const nspData = await fetchNspById(id);
+      const nspData = await fetchNspById(firestore, id);
       if (!nspData) {
         notFound();
       } else {
@@ -23,7 +25,7 @@ export default function EditNSPPage({ params }: { params: { id: string } }) {
       setLoading(false);
     }
     getNsp();
-  }, [id]);
+  }, [id, firestore]);
 
   if (loading) {
     return (

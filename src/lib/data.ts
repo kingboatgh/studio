@@ -1,32 +1,22 @@
-'use server';
-import { NSP, Submission, DashboardStats } from './definitions';
+
+import type { NSP, Submission, DashboardStats } from './definitions';
 import { 
-  getFirestore, 
   collection, 
   getDocs, 
   doc, 
   getDoc,
-  addDoc,
   setDoc,
   query,
   where,
-  Timestamp,
-  writeBatch,
   serverTimestamp,
+  type Firestore,
 } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
 
 // Assume a default district for now
 const DISTRICT_ID = 'district1';
 
-async function getDb() {
-    const { firestore } = initializeFirebase();
-    return firestore;
-}
-
 // In a real app, this would query Firestore
-export async function fetchNsps(queryString?: string, page: number = 1): Promise<{nsps: NSP[], total: number}> {
-  const db = await getDb();
+export async function fetchNsps(db: Firestore, queryString?: string, page: number = 1): Promise<{nsps: NSP[], total: number}> {
   const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
   let q = query(personnelCol);
@@ -49,8 +39,7 @@ export async function fetchNsps(queryString?: string, page: number = 1): Promise
   return { nsps: allNSPs, total: allNSPs.length };
 }
 
-export async function fetchNspById(id: string): Promise<NSP | undefined> {
-    const db = await getDb();
+export async function fetchNspById(db: Firestore, id: string): Promise<NSP | undefined> {
     const docRef = doc(db, 'districts', DISTRICT_ID, 'personnel', id);
     const docSnap = await getDoc(docRef);
 
@@ -61,8 +50,7 @@ export async function fetchNspById(id: string): Promise<NSP | undefined> {
     }
 }
 
-export async function getDashboardStats(): Promise<DashboardStats> {
-    const db = await getDb();
+export async function getDashboardStats(db: Firestore): Promise<DashboardStats> {
     const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
     const personnelSnapshot = await getDocs(query(personnelCol, where('isDisabled', '==', false)));
@@ -94,8 +82,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 }
 
 
-export async function createNewNSP(data: Omit<NSP, 'id' | 'createdDate' | 'lastUpdatedDate' | 'serviceYear'> & { districtId: string }) {
-    const db = await getDb();
+export async function createNewNSP(db: Firestore, data: Omit<NSP, 'id' | 'createdDate' | 'lastUpdatedDate' | 'serviceYear'> & { districtId: string }) {
     const newId = generateNspId();
     const personnelRef = doc(db, 'districts', data.districtId, 'personnel', newId);
     
@@ -116,11 +103,10 @@ function generateNspId() {
   return `${prefix}${randomNumber}`;
 }
 
-export async function updateNSP(id: string, data: Partial<Omit<NSP, 'id'>>) {
+export async function updateNSP(db: Firestore, id: string, data: Partial<Omit<NSP, 'id'>>) {
     if (!data.districtId) {
         throw new Error("District ID is required to update NSP record.");
     }
-    const db = await getDb();
     const docRef = doc(db, 'districts', data.districtId, 'personnel', id);
     
     const updateData = {
@@ -131,8 +117,7 @@ export async function updateNSP(id: string, data: Partial<Omit<NSP, 'id'>>) {
     await setDoc(docRef, updateData, { merge: true });
 }
 
-export async function createSubmission(districtId: string, nspId: string, month: number, year: number, officerName: string) {
-    const db = await getDb();
+export async function createSubmission(db: Firestore, districtId: string, nspId: string, month: number, year: number, officerName: string) {
     const submissionPath = `/districts/${districtId}/personnel/${nspId}/submissions`;
     const submissionsCol = collection(db, submissionPath);
     
@@ -157,8 +142,7 @@ export async function createSubmission(districtId: string, nspId: string, month:
     await setDoc(submissionRef, newSubmission);
 }
 
-export async function checkServiceNumberUniqueness(serviceNumber: string, currentNspId?: string): Promise<boolean> {
-    const db = await getDb();
+export async function checkServiceNumberUniqueness(db: Firestore, serviceNumber: string, currentNspId?: string): Promise<boolean> {
     // This query needs to check across all districts, which is inefficient.
     // A better schema would have a top-level collection of service numbers for quick lookups.
     // For now, we query only the default district.

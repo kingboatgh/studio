@@ -6,15 +6,17 @@ import { Users, CheckCircle, AlertCircle, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DashboardStats } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFirestore } from '@/firebase';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const dashboardStats = await getDashboardStats();
+        const dashboardStats = await getDashboardStats(firestore);
         setStats(dashboardStats);
       } catch (error) {
         console.error("Failed to fetch dashboard stats:", error);
@@ -24,7 +26,7 @@ export default function DashboardPage() {
       }
     }
     fetchStats();
-  }, []);
+  }, [firestore]);
 
   return (
     <div className="space-y-8">

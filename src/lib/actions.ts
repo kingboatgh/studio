@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { createNewNSP, updateNSP, createSubmission, checkServiceNumberUniqueness } from './data';
+import { createNewNSP, updateNSP, createSubmission, checkServiceNumberUniqueness } from './data-client';
 
 // Assume a default district for now
 const DISTRICT_ID = 'district1';
