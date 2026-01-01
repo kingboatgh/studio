@@ -11,6 +11,7 @@ export type NSP = {
   lastUpdatedDate: Timestamp;
   districtId: string;
   serviceYear: number;
+  hasSubmittedThisMonth?: boolean; // New optional field
 };
 
 export type Submission = {

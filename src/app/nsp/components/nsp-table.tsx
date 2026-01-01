@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import type { NSP } from '@/lib/definitions';
 import { EditNSPButton } from './buttons';
 import { SubmitButton } from './submit-button';
+import { CheckCircle } from 'lucide-react';
 
 export function NSPTable({ nsps }: { nsps: NSP[] }) {
   if (!nsps) return <p className="text-center text-muted-foreground">Could not load NSP data.</p>;
@@ -25,7 +26,7 @@ export function NSPTable({ nsps }: { nsps: NSP[] }) {
             <TableHead>Service No.</TableHead>
             <TableHead>Full Name</TableHead>
             <TableHead className="hidden md:table-cell">Institution</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Status (Current Month)</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -38,9 +39,12 @@ export function NSPTable({ nsps }: { nsps: NSP[] }) {
                 <TableCell>{nsp.fullName}</TableCell>
                 <TableCell className="hidden md:table-cell">{nsp.institution}</TableCell>
                 <TableCell>
-                  <Badge variant={!nsp.isDisabled ? 'secondary' : 'destructive'}>
-                    {!nsp.isDisabled ? 'Active' : 'Inactive'}
-                  </Badge>
+                  {nsp.hasSubmittedThisMonth ? (
+                    <Badge variant="secondary" className="text-green-600">
+                      <CheckCircle className="mr-1 h-3 w-3" />
+                      Submitted
+                    </Badge>
+                  ) : null}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

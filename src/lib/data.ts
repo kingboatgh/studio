@@ -21,14 +21,31 @@ const DISTRICT_ID = 'district1';
 export async function fetchNsps(db: Firestore, queryString?: string, page: number = 1): Promise<{nsps: NSP[], total: number}> {
   const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
-  let q = query(personnelCol);
-
-  // Note: Firestore doesn't support case-insensitive queries on the backend easily.
-  // For a real app, you would typically store a lowercased version of fields you want to search on.
-  // Here we fetch all and filter in memory, which is not scalable.
-  const querySnapshot = await getDocs(q);
+  // 1. Fetch all NSPs
+  const querySnapshot = await getDocs(personnelCol);
   let allNSPs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
   
+  // 2. Fetch all submissions for the current month in the district
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  
+  // This query will scan all submissions within the district's personnel subcollections
+  const submissionsQuery = query(
+    collectionGroup(db, 'submissions'),
+    where('month', '==', currentMonth),
+    where('year', '==', currentYear)
+  );
+  
+  const submissionsSnapshot = await getDocs(submissionsQuery);
+  const submittedNspIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().nspId));
+
+  // 3. Enrich NSP data with submission status
+  allNSPs = allNSPs.map(nsp => ({
+    ...nsp,
+    hasSubmittedThisMonth: submittedNspIds.has(nsp.id)
+  }));
+  
+  // 4. Filter if a search query is provided
   if (queryString) {
     const lowercasedQuery = queryString.toLowerCase();
     allNSPs = allNSPs.filter(nsp => 
@@ -57,23 +74,19 @@ export async function getDashboardStats(db: Firestore): Promise<DashboardStats> 
 
     const personnelSnapshot = await getDocs(query(personnelCol, where('isDisabled', '==', false)));
     const totalNsps = personnelSnapshot.size;
-    const nspIds = personnelSnapshot.docs.map(doc => doc.id);
-
+    
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
-    
-    let submittedThisMonth = 0;
-    if (nspIds.length > 0) {
-        // Query submissions for each NSP. This is inefficient and should be optimized in a real app.
-        const submissionPromises = nspIds.map(nspId => {
-            const submissionsCol = collection(db, `districts/${DISTRICT_ID}/personnel/${nspId}/submissions`);
-            const q = query(submissionsCol, where('month', '==', currentMonth), where('year', '==', currentYear));
-            return getDocs(q);
-        });
 
-        const submissionSnapshots = await Promise.all(submissionPromises);
-        submittedThisMonth = submissionSnapshots.filter(snapshot => !snapshot.empty).length;
-    }
+    const submissionsQuery = query(
+      collectionGroup(db, 'submissions'),
+      where('month', '==', currentMonth),
+      where('year', '==', currentYear)
+    );
+    const submissionsSnapshot = await getDocs(submissionsQuery);
+    // Filter to only include submissions from personnel in the current district.
+    const districtNspIds = new Set(personnelSnapshot.docs.map(doc => doc.id));
+    const submittedThisMonth = submissionsSnapshot.docs.filter(doc => districtNspIds.has(doc.data().nspId)).length;
     
     return {
         totalNsps,
@@ -146,9 +159,6 @@ export async function createSubmission(db: Firestore, districtId: string, nspId:
 }
 
 export async function checkServiceNumberUniqueness(db: Firestore, serviceNumber: string, currentNspId?: string): Promise<boolean> {
-    // This query needs to check across all districts, which is inefficient.
-    // A better schema would have a top-level collection of service numbers for quick lookups.
-    // For now, we query only the default district.
     const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
     const q = query(personnelCol, where('serviceNumber', '==', serviceNumber));
     const querySnapshot = await getDocs(q);
