@@ -1,20 +1,12 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getDashboardStats, fetchRecentSubmissions } from "@/lib/data";
+import { getDashboardStats } from "@/lib/data";
 import { Users, User, ClipboardCheck, Clock, ArrowRight, TrendingUp } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
-import type { DashboardStats, SubmissionWithNSP } from '@/lib/definitions';
+import type { DashboardStats } from '@/lib/definitions';
 import { Progress } from "@/components/ui/progress";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from "@/components/ui/button";
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -22,7 +14,6 @@ import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentSubmissions, setRecentSubmissions] = useState<SubmissionWithNSP[]>([]);
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
 
@@ -30,18 +21,12 @@ export default function DashboardPage() {
     if (!firestore) return;
     setLoading(true);
     try {
-      const [dashboardStats, submissions] = await Promise.all([
-        getDashboardStats(firestore),
-        fetchRecentSubmissions(firestore, 4) // Fetch 4 recent submissions
-      ]);
-      
+      const dashboardStats = await getDashboardStats(firestore);
       setStats(dashboardStats);
-      setRecentSubmissions(submissions);
 
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
       setStats({ totalNsps: 0, activeNsps: 0, submittedThisMonth: 0, pendingThisMonth: 0 });
-      setRecentSubmissions([]);
     } finally {
       setLoading(false);
     }
@@ -54,7 +39,6 @@ export default function DashboardPage() {
   }, [firestore, fetchData]);
 
 
-  const currentMonthName = format(new Date(), 'MMMM yyyy');
   const currentDate = format(new Date(), 'EEEE, d MMMM yyyy');
   const submissionPercentage = stats && stats.activeNsps > 0 ? (stats.submittedThisMonth / stats.activeNsps) * 100 : 0;
 
@@ -109,26 +93,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-                <CardTitle>Recent Submissions</CardTitle>
-            </div>
-            <Link href="/submissions" className="flex items-center text-sm font-medium text-primary hover:underline">
-              View All <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-        </CardHeader>
-        <CardContent>
-            {loading ? (
-                <div className="space-y-2">
-                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-                </div>
-            ) : (
-                <RecentSubmissionsTable submissions={recentSubmissions} />
-            )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -162,38 +126,5 @@ function ActionButton({ href, children, isPrimary = false }: { href: string, chi
         <ArrowRight className="h-4 w-4" />
       </Button>
     </Link>
-  );
-}
-
-function RecentSubmissionsTable({ submissions }: { submissions: SubmissionWithNSP[] }) {
-    if (submissions.length === 0) {
-        return <p className="text-center text-muted-foreground py-8">No recent submissions found.</p>
-    }
-
-  return (
-    <div className="w-full">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>NSP ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Place of Service</TableHead>
-            <TableHead>Submitted At</TableHead>
-            <TableHead>Desk Officer</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {submissions.map((sub) => (
-            <TableRow key={sub.id}>
-              <TableCell className="font-medium text-primary">{sub.nspId}</TableCell>
-              <TableCell>{sub.nspFullName}</TableCell>
-              <TableCell>{sub.nspPosting}</TableCell>
-              <TableCell>{sub.timestamp ? format(sub.timestamp.toDate(), 'dd/MM/yyyy, HH:mm:ss') : '-'}</TableCell>
-              <TableCell>{sub.deskOfficerName ?? '-'}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
   );
 }

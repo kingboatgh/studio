@@ -97,40 +97,6 @@ export async function getDashboardStats(db: Firestore): Promise<DashboardStats> 
     };
 }
 
-export async function fetchRecentSubmissions(db: Firestore, count: number): Promise<SubmissionWithNSP[]> {
-  const submissionsColGroup = collectionGroup(db, 'submissions');
-  const q = query(submissionsColGroup, orderBy('timestamp', 'desc'), limit(count));
-  
-  const querySnapshot = await getDocs(q);
-  
-  const recentSubmissions: SubmissionWithNSP[] = [];
-  
-  for (const subDoc of querySnapshot.docs) {
-    const submission = subDoc.data() as Submission;
-    
-    const pathParts = subDoc.ref.path.split('/');
-    const personnelId = pathParts[3];
-    const districtId = pathParts[1];
-    
-    const nspRef = doc(db, 'districts', districtId, 'personnel', personnelId);
-    const nspSnap = await getDoc(nspRef);
-    
-    if (nspSnap.exists()) {
-      const nsp = nspSnap.data() as NSP;
-      recentSubmissions.push({
-        id: subDoc.id,
-        ...submission,
-        nspFullName: nsp.fullName,
-        nspServiceNumber: nsp.serviceNumber,
-        nspPosting: nsp.posting,
-      });
-    }
-  }
-  
-  return recentSubmissions;
-}
-
-
 export async function createNewNSP(db: Firestore, data: Omit<NSP, 'id' | 'createdDate' | 'lastUpdatedDate' | 'serviceYear' | 'isDisabled'> & { districtId: string }) {
     const newId = generateNspId();
     const personnelRef = doc(db, 'districts', data.districtId, 'personnel', newId);
