@@ -20,9 +20,9 @@ import { updateNSP } from '@/lib/data';
 export function AddNSPButton() {
   return (
     <Link href="/nsp/new">
-      <Button>
+      <Button size="sm">
         <PlusCircle className="mr-2 h-4 w-4" />
-        Add New NSP
+        Add New
       </Button>
     </Link>
   );
@@ -31,7 +31,7 @@ export function AddNSPButton() {
 export function EditNSPButton({ id }: { id: string }) {
     return (
       <Link href={`/nsp/${id}/edit`}>
-        <Button variant="outline" size="sm" aria-label="Edit NSP">
+        <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Edit NSP">
             <Pencil className="h-4 w-4" />
         </Button>
       </Link>
@@ -47,10 +47,9 @@ export function DeleteNSPButton({ id, onDeleted }: { id: string; onDeleted: () =
     if (!firestore) return;
     setIsPending(true);
     try {
-      // Assuming a default district for now for the update operation
       await updateNSP(firestore, id, { isDisabled: true, districtId: 'district1' });
       toast({ title: "Success", description: "NSP record has been deactivated." });
-      onDeleted(); // Re-fetch data on parent component
+      onDeleted();
     } catch (error: any) {
       console.error("Deletion failed:", error);
       toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to deactivate record." });
@@ -62,7 +61,7 @@ export function DeleteNSPButton({ id, onDeleted }: { id: string; onDeleted: () =
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" aria-label="Delete NSP">
+        <Button variant="destructive" size="icon" className="h-8 w-8" aria-label="Delete NSP">
           <Trash2 className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>

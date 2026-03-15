@@ -8,25 +8,81 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the National Service Personnel record. Format: LDM0001, LDM0002, etc.",
-          "format": "string"
+          "description": "Unique identifier for the National Service Personnel record (System ID). Format: LDM0001, LDM0002, etc."
         },
-        "serviceNumber": {
+        "email": {
           "type": "string",
-          "description": "Unique service number assigned to the NSP by the National Service Secretariat.",
-          "format": "string"
+          "description": "Email address of the NSP.",
+          "format": "email"
+        },
+        "nssNumber": {
+          "type": "string",
+          "description": "Unique service number assigned to the NSP by the National Service Secretariat (NSS Number)."
+        },
+        "surname": {
+          "type": "string",
+          "description": "Surname of the NSP."
+        },
+        "otherNames": {
+          "type": "string",
+          "description": "Other names of the NSP."
         },
         "fullName": {
           "type": "string",
-          "description": "Full name of the National Service Personnel."
+          "description": "Full name of the NSP (concatenation of surname and other names)."
         },
         "institution": {
           "type": "string",
-          "description": "The institution the NSP is affiliated with."
+          "description": "The institution the NSP attended."
+        },
+        "courseOfStudy": {
+          "type": "string",
+          "description": "The course of study pursued by the NSP."
+        },
+        "gender": {
+          "type": "string",
+          "description": "Gender of the NSP.",
+          "enum": [
+            "Male",
+            "Female",
+            "Other"
+          ]
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number of the NSP."
+        },
+        "residentialAddress": {
+          "type": "string",
+          "description": "Permanent residential address of the NSP."
+        },
+        "gpsAddress": {
+          "type": "string",
+          "description": "GPS address of the NSP's residence."
         },
         "posting": {
           "type": "string",
-          "description": "The location or department where the NSP is posted."
+          "description": "The location or department where the NSP is posted (Place of service)."
+        },
+        "region": {
+          "type": "string",
+          "description": "Region of service."
+        },
+        "district": {
+          "type": "string",
+          "description": "District of service."
+        },
+        "nextOfKinName": {
+          "type": "string",
+          "description": "Name of the NSP's next of kin."
+        },
+        "nextOfKinPhone": {
+          "type": "string",
+          "description": "Contact number of the NSP's next of kin."
+        },
+        "isEmployed": {
+          "type": "boolean",
+          "description": "Employment status of the NSP."
         },
         "createdDate": {
           "type": "string",
@@ -53,10 +109,22 @@
       },
       "required": [
         "id",
-        "serviceNumber",
+        "email",
+        "nssNumber",
+        "surname",
+        "otherNames",
         "fullName",
         "institution",
+        "courseOfStudy",
+        "gender",
+        "phone",
+        "residentialAddress",
         "posting",
+        "region",
+        "district",
+        "nextOfKinName",
+        "nextOfKinPhone",
+        "isEmployed",
         "createdDate",
         "lastUpdatedDate",
         "isDisabled",
@@ -178,13 +246,17 @@
       {
         "path": "/admins/{userId}",
         "definition": {
-            "entityName": "User",
-            "schema": { "$ref": "#/backend/entities/User" },
-            "description": "Collection to store admin user flags. The existence of a document with isAdmin:true indicates admin rights.",
-            "params": [{
-                "name": "userId",
-                "description": "The unique identifier of the user (matches auth uid)."
-            }]
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection to store admin user flags. The existence of a document with isAdmin:true indicates admin rights.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user (matches auth uid)."
+            }
+          ]
         }
       },
       {

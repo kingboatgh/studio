@@ -99,7 +99,7 @@ function MonthlySubmissionsComponent() {
       const csvData = submissions.map(s => ({
         'NSP ID': s.nspId,
         'Full Name': s.nspFullName,
-        'Service Number': s.nspServiceNumber,
+        'NSS Number': s.nspNssNumber,
         'Submission Month': months.find(m => m.value === s.month)?.label,
         'Submission Year': s.year,
         'Submitted By': s.deskOfficerName,
@@ -146,11 +146,11 @@ function MonthlySubmissionsComponent() {
 
         doc.autoTable({
             startY: 20,
-            head: [['NSP ID', 'Full Name', 'Service Number', 'Submitted By', 'Timestamp']],
+            head: [['NSP ID', 'Full Name', 'NSS Number', 'Submitted By', 'Timestamp']],
             body: submissions.map(s => [
                 s.nspId,
                 s.nspFullName,
-                s.nspServiceNumber,
+                s.nspNssNumber,
                 s.deskOfficerName || 'N/A',
                 s.timestamp.toDate().toLocaleString()
             ]),
@@ -173,13 +173,13 @@ function MonthlySubmissionsComponent() {
   const filteredNsps = nsps.filter(nsp => 
     nsp.fullName.toLowerCase().includes(listQuery.toLowerCase()) ||
     (nsp.id && nsp.id.toLowerCase().includes(listQuery.toLowerCase())) ||
-    nsp.serviceNumber.toLowerCase().includes(listQuery.toLowerCase())
+    nsp.nssNumber.toLowerCase().includes(listQuery.toLowerCase())
   );
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-bold tracking-tighter">Monthly Submissions</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Monthly Submissions</h1>
         <p className="text-muted-foreground mt-1">
           Record and track NSP monthly evaluation form submissions.
         </p>
@@ -189,21 +189,12 @@ function MonthlySubmissionsComponent() {
         <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Quick Submission</CardTitle>
-              <CardDescription>Search by NSP ID, Service Number, or Name.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Search placeholder="Enter NSP ID (e.g., LDM0001)" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
               <CardTitle>Select Period</CardTitle>
               <CardDescription>Filter submissions by month and year.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
               <Select value={String(selectedDate.getMonth() + 1)} onValueChange={handleMonthChange}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="Select month" />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,7 +204,7 @@ function MonthlySubmissionsComponent() {
                 </SelectContent>
               </Select>
               <Select value={String(selectedDate.getFullYear())} onValueChange={handleYearChange}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -223,18 +214,20 @@ function MonthlySubmissionsComponent() {
                 </SelectContent>
               </Select>
             </CardContent>
+          </Card>
+          <Card>
              <CardHeader>
                 <CardTitle>Export Report</CardTitle>
                 <CardDescription>Download submission data for the selected period.</CardDescription>
              </CardHeader>
              <CardContent className="grid grid-cols-2 gap-4">
-                <Button variant="outline" onClick={handleExportCsv} disabled={isExportingCsv}>
+                <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={isExportingCsv}>
                     <FileDown className="mr-2 h-4 w-4" /> 
-                    {isExportingCsv ? 'Exporting...' : 'CSV'}
+                    {isExportingCsv ? 'Exporting...' : 'Export CSV'}
                 </Button>
-                <Button variant="outline" onClick={handleExportPdf} disabled={isExportingPdf}>
+                <Button variant="outline" size="sm" onClick={handleExportPdf} disabled={isExportingPdf}>
                     <FileDown className="mr-2 h-4 w-4" />
-                    {isExportingPdf ? 'Exporting...' : 'PDF'}
+                    {isExportingPdf ? 'Exporting...' : 'Export PDF'}
                 </Button>
             </CardContent>
           </Card>
@@ -249,41 +242,41 @@ function MonthlySubmissionsComponent() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Card>
-                  <CardContent className="p-6">
-                    {loading ? <Skeleton className="h-8 w-12 mb-1" /> : <p className="text-3xl font-bold">{stats.pending}</p>}
+                  <CardContent className="p-4">
+                    {loading ? <Skeleton className="h-8 w-12 mb-1" /> : <p className="text-2xl font-bold">{stats.pending}</p>}
                     <p className="text-sm text-muted-foreground">Pending</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-6">
-                    {loading ? <Skeleton className="h-8 w-12 mb-1" /> : <p className="text-3xl font-bold">{stats.submitted}</p>}
+                  <CardContent className="p-4">
+                    {loading ? <Skeleton className="h-8 w-12 mb-1" /> : <p className="text-2xl font-bold">{stats.submitted}</p>}
                     <p className="text-sm text-muted-foreground">Submitted</p>
                   </CardContent>
                 </Card>
               </div>
               <div className="flex justify-between items-center gap-2 border-t pt-4">
                 <div className="relative flex-1">
-                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
                     placeholder="Search personnel list..." 
-                    className="pl-10" 
+                    className="pl-9 h-9" 
                     value={listQuery}
                     onChange={(e) => setListQuery(e.target.value)}
                   />
                 </div>
-                <div className="flex items-center rounded-lg p-1 bg-muted">
-                  <Button variant={view === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setView('grid')}>
-                    <LayoutGrid className="h-5 w-5" />
+                <div className="flex items-center rounded-md p-1 bg-muted">
+                  <Button variant={view === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setView('grid')}>
+                    <LayoutGrid className="h-4 w-4" />
                   </Button>
-                  <Button variant={view === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setView('list')}>
-                    <List className="h-5 w-5" />
+                  <Button variant={view === 'list' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={() => setView('list')}>
+                    <List className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               
               {loading ? (
                 <div className="space-y-3 pt-4">
-                  {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+                  {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
                 </div>
               ) : (
                 <SubmissionList nsps={filteredNsps} view={view} onSubmissionSuccess={fetchData} />
@@ -303,15 +296,15 @@ function SubmissionList({ nsps, view, onSubmissionSuccess }: { nsps: NSP[], view
 
   if (view === 'grid') {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
           {nsps.map(nsp => (
             <Card key={nsp.id} className="flex flex-col">
-              <CardContent className="p-4 flex-grow">
-                <p className="font-semibold">{nsp.fullName}</p>
-                <p className="text-sm text-primary font-mono">{nsp.id}</p>
-                <p className="text-sm text-muted-foreground">{nsp.posting}</p>
+              <CardContent className="p-3 flex-grow">
+                <p className="font-semibold text-sm">{nsp.fullName}</p>
+                <p className="text-xs text-primary font-mono">{nsp.id}</p>
+                <p className="text-xs text-muted-foreground">{nsp.posting}</p>
               </CardContent>
-              <div className="border-t p-4">
+              <div className="border-t p-3">
                 <SubmitButton nsp={nsp} onSubmissionSuccess={onSubmissionSuccess} />
               </div>
             </Card>
@@ -324,10 +317,10 @@ function SubmissionList({ nsps, view, onSubmissionSuccess }: { nsps: NSP[], view
       <div className="space-y-2 pt-4">
           {nsps.map(nsp => (
               <Card key={nsp.id}>
-                  <CardContent className="p-3 flex justify-between items-center">
+                  <CardContent className="p-2.5 flex justify-between items-center">
                       <div>
-                          <p className="font-semibold">{nsp.fullName}</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="font-semibold text-sm">{nsp.fullName}</p>
+                          <p className="text-xs text-muted-foreground">
                               <span className="font-mono">{nsp.id}</span>
                               <span className="mx-2">•</span>
                               <span>{nsp.posting}</span>

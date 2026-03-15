@@ -13,11 +13,31 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useFirestore } from '@/firebase';
 
 type CSVRow = {
-  serviceNumber: string;
-  fullName: string;
+  email: string;
+  nssNumber: string;
+  surname: string;
+  otherNames: string;
   institution: string;
+  courseOfStudy: string;
+  gender: 'Male' | 'Female' | 'Other';
+  phone: string;
+  residentialAddress: string;
+  gpsAddress: string;
   posting: string;
+  region: string;
+  district: string;
+  nextOfKinName: string;
+  nextOfKinPhone: string;
+  isEmployed: string; // Will be 'yes' or 'no'
 };
+
+const requiredHeaders = [
+    'email', 'nssNumber', 'surname', 'otherNames', 'institution', 
+    'courseOfStudy', 'gender', 'phone', 'residentialAddress', 'posting', 
+    'region', 'district', 'nextOfKinName', 'nextOfKinPhone', 'isEmployed'
+];
+const optionalHeaders = ['gpsAddress'];
+
 
 export default function BulkUploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -67,7 +87,6 @@ export default function BulkUploadPage() {
           return;
         }
         
-        const requiredHeaders = ['serviceNumber', 'fullName', 'institution', 'posting'];
         const actualHeaders = results.meta.fields || [];
         const missingHeaders = requiredHeaders.filter(h => !actualHeaders.includes(h));
 
@@ -79,17 +98,17 @@ export default function BulkUploadPage() {
 
         let processedCount = 0;
         for (const row of rows) {
-          if (row.serviceNumber && row.fullName && row.institution && row.posting) {
+          if (row.nssNumber && row.surname && row.otherNames) {
             try {
-               // Assume a default district for now
               const DISTRICT_ID = 'district1';
               await createNewNSP(firestore, { 
                 ...row,
-                districtId: DISTRICT_ID
-               });
+                districtId: DISTRICT_ID,
+                isEmployed: row.isEmployed.toLowerCase() === 'yes',
+                gpsAddress: row.gpsAddress || '',
+              });
             } catch (err: any) {
-              console.error(`Failed to upload record for ${row.fullName}:`, err);
-              // Optionally collect errors to display them later
+              console.error(`Failed to upload record for ${row.surname}:`, err);
             }
           }
           processedCount++;
@@ -111,7 +130,13 @@ export default function BulkUploadPage() {
   };
   
   const downloadTemplate = () => {
-    const csvContent = "serviceNumber,fullName,institution,posting\nNSS123456,John Doe,University of Ghana,District Assembly";
+    const csvHeaders = [...requiredHeaders, ...optionalHeaders].join(',');
+    const exampleData = [
+        'test@example.com', 'NSS123456', 'Doe', 'John', 'University of Ghana', 'Computer Science', 
+        'Male', '1234567890', '123 Faux Street', 'District Assembly', 'Greater Accra', 'Accra', 
+        'Jane Doe', '0987654321', 'no', 'GA-123-4567'
+    ].join(',');
+    const csvContent = `${csvHeaders}\n${exampleData}`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     if (link.download !== undefined) {
@@ -126,7 +151,7 @@ export default function BulkUploadPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8">
       <Card>
         <CardHeader>
           <CardTitle>Bulk Upload NSP Records</CardTitle>
@@ -136,8 +161,8 @@ export default function BulkUploadPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex w-full items-center space-x-2">
-            <Input type="file" accept=".csv" onChange={handleFileChange} disabled={isUploading} />
-            <Button onClick={handleUpload} disabled={!file || isUploading}>
+            <Input type="file" accept=".csv" onChange={handleFileChange} disabled={isUploading} className="h-9"/>
+            <Button onClick={handleUpload} disabled={!file || isUploading} size="sm">
               <Upload className="mr-2 h-4 w-4" />
               {isUploading ? 'Uploading...' : 'Upload File'}
             </Button>
@@ -181,21 +206,15 @@ export default function BulkUploadPage() {
             </div>
             <div>
                 <h4 className="font-medium">Required Columns</h4>
-                <ul className="mt-2 list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                    <li><code className="font-semibold text-foreground">serviceNumber</code>: The unique national service number.</li>
-                    <li><code className="font-semibold text-foreground">fullName</code>: The full name of the personnel.</li>
-                    <li><code className="font-semibold text-foreground">institution</code>: The tertiary institution attended.</li>
-                    <li><code className="font-semibold text-foreground">posting</code>: The place of primary assignment.</li>
+                <ul className="mt-2 list-disc list-inside space-y-1 text-sm text-muted-foreground columns-2">
+                    {requiredHeaders.map(h => <li key={h}><code className="font-semibold text-foreground">{h}</code></li>)}
                 </ul>
             </div>
-            <div className="rounded-md bg-muted p-4">
-                <div className="flex items-start gap-3">
-                    <FileText className="h-5 w-5 flex-shrink-0 text-muted-foreground mt-0.5" />
-                    <div className="text-sm">
-                        <p className="font-medium">Example:</p>
-                        <pre className="mt-1 text-xs"><code>serviceNumber,fullName,institution,posting<br />NSS123456,John Doe,University of Ghana,District Assembly</code></pre>
-                    </div>
-                </div>
+             <div>
+                <h4 className="font-medium">Optional Columns</h4>
+                <ul className="mt-2 list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                    {optionalHeaders.map(h => <li key={h}><code className="font-semibold text-foreground">{h}</code></li>)}
+                </ul>
             </div>
         </CardContent>
       </Card>

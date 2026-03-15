@@ -1,18 +1,32 @@
 import { Timestamp } from 'firebase/firestore';
 
 export type NSP = {
-  id: string; // Document ID from Firestore
-  serviceNumber: string;
-  fullName: string;
+  id: string; // Document ID from Firestore (System ID)
+  email: string;
+  nssNumber: string;
+  surname: string;
+  otherNames: string;
+  fullName: string; // Concatenation of surname and otherNames
   institution: string;
-  posting: string;
-  isDisabled: boolean;
+  courseOfStudy: string;
+  gender: 'Male' | 'Female' | 'Other';
+  phone: string;
+  residentialAddress: string;
+  gpsAddress: string;
+  posting: string; // Place of service
+  region: string;
+  district: string;
+  nextOfKinName: string;
+  nextOfKinPhone: string;
+  isEmployed: boolean;
+  isDisabled: boolean; // For soft delete
   createdDate: Timestamp;
   lastUpdatedDate: Timestamp;
-  districtId: string;
+  districtId: string; // Firebase district document ID
   serviceYear: number;
-  hasSubmittedThisMonth?: boolean; // New optional field
+  hasSubmittedThisMonth?: boolean;
 };
+
 
 export type Submission = {
   id: string; // Document ID
@@ -25,7 +39,7 @@ export type Submission = {
 
 export type SubmissionWithNSP = Submission & {
   nspFullName: string;
-  nspServiceNumber: string;
+  nspNssNumber: string;
   nspPosting?: string;
 }
 

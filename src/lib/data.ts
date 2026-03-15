@@ -21,12 +21,9 @@ export async function fetchNsps(db: Firestore, options: { queryString?: string; 
   const { queryString, month, year } = options;
   const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
-  // Fetch all personnel. We will filter client-side for simplicity in this function.
-  // For a larger dataset, server-side filtering would be better.
   const nspSnapshot = await getDocs(personnelCol);
   let allNSPs = nspSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
 
-  // If month and year are provided, enrich with submission status.
   if (month && year) {
     const submissionsQuery = query(collectionGroup(db, 'submissions'), 
       where('month', '==', month),
@@ -43,23 +40,19 @@ export async function fetchNsps(db: Firestore, options: { queryString?: string; 
   
   let filteredNSPs = allNSPs;
 
-  // Filter if a search query is provided.
   if (queryString) {
     const lowercasedQuery = queryString.toLowerCase();
     filteredNSPs = allNSPs.filter(nsp => 
       nsp.fullName.toLowerCase().includes(lowercasedQuery) ||
       (nsp.id && nsp.id.toLowerCase().includes(lowercasedQuery)) ||
-      nsp.serviceNumber.toLowerCase().includes(lowercasedQuery)
+      nsp.nssNumber.toLowerCase().includes(lowercasedQuery) ||
+      nsp.email.toLowerCase().includes(lowercasedQuery)
     );
   }
   
-  // For the main registry view (no month/year), we show all users (active/inactive)
-  // And sort them. For other views, we probably only want active ones.
   if (!month && !year) {
-    // Show all, sort active first.
     filteredNSPs.sort((a, b) => (a.isDisabled === b.isDisabled) ? 0 : a.isDisabled ? 1 : -1);
   } else {
-    // For views with submission status, only show active personnel
     filteredNSPs = filteredNSPs.filter(nsp => !nsp.isDisabled);
   }
 
@@ -84,7 +77,6 @@ export async function getDashboardStats(db: Firestore): Promise<DashboardStats> 
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
 
-    // Queries
     const allPersonnelQuery = getDocs(personnelCol);
     const activePersonnelQuery = getDocs(query(personnelCol, where('isDisabled', '==', false)));
     const submissionsQuery = getDocs(query(
@@ -93,7 +85,6 @@ export async function getDashboardStats(db: Firestore): Promise<DashboardStats> 
         where('year', '==', currentYear)
     ));
 
-    // Run in parallel
     const [allPersonnelSnapshot, activePersonnelSnapshot, submissionsSnapshot] = await Promise.all([
         allPersonnelQuery,
         activePersonnelQuery,
@@ -113,13 +104,16 @@ export async function getDashboardStats(db: Firestore): Promise<DashboardStats> 
 }
 
 
-export async function createNewNSP(db: Firestore, data: Omit<NSP, 'id' | 'createdDate' | 'lastUpdatedDate' | 'serviceYear' | 'isDisabled'> & { districtId: string }) {
+export async function createNewNSP(db: Firestore, data: Omit<NSP, 'id' | 'createdDate' | 'lastUpdatedDate' | 'serviceYear' | 'isDisabled' | 'fullName'>) {
     const newId = generateNspId();
     const personnelRef = doc(db, 'districts', data.districtId, 'personnel', newId);
+
+    const fullName = `${data.surname} ${data.otherNames}`;
     
     const newNspData = {
         ...data,
         id: newId,
+        fullName,
         isDisabled: false,
         serviceYear: new Date().getFullYear(),
         createdDate: serverTimestamp(),
@@ -142,10 +136,16 @@ export async function updateNSP(db: Firestore, id: string, data: Partial<Omit<NS
     }
     const docRef = doc(db, 'districts', data.districtId, 'personnel', id);
     
-    const updateData = {
-        ...data,
-        lastUpdatedDate: serverTimestamp(),
-    };
+    const updateData: Partial<NSP> = { ...data };
+    if (data.surname || data.otherNames) {
+        const currentDoc = await getDoc(docRef);
+        const currentData = currentDoc.data() as NSP;
+        const surname = data.surname ?? currentData.surname;
+        const otherNames = data.otherNames ?? currentData.otherNames;
+        updateData.fullName = `${surname} ${otherNames}`;
+    }
+
+    updateData.lastUpdatedDate = serverTimestamp();
 
     await setDoc(docRef, updateData, { merge: true });
 }
@@ -173,9 +173,9 @@ export async function createSubmission(db: Firestore, districtId: string, nspId:
     await setDoc(submissionRef, newSubmission);
 }
 
-export async function checkServiceNumberUniqueness(db: Firestore, serviceNumber: string, currentNspId?: string): Promise<boolean> {
+export async function checkNssNumberUniqueness(db: Firestore, nssNumber: string, currentNspId?: string): Promise<boolean> {
     const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
-    const q = query(personnelCol, where('serviceNumber', '==', serviceNumber));
+    const q = query(personnelCol, where('nssNumber', '==', nssNumber));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
@@ -183,7 +183,6 @@ export async function checkServiceNumberUniqueness(db: Firestore, serviceNumber:
     }
 
     if (currentNspId) {
-        // If we are updating, it's ok if the number belongs to the current user.
         const isSelf = querySnapshot.docs.every(doc => doc.id === currentNspId);
         return isSelf;
     }
@@ -192,7 +191,6 @@ export async function checkServiceNumberUniqueness(db: Firestore, serviceNumber:
 }
 
 export async function fetchSubmissionsForMonth(db: Firestore, month: number, year: number): Promise<SubmissionWithNSP[]> {
-  // 1. Fetch all submissions for the month/year
   const submissionsQuery = query(collectionGroup(db, 'submissions'), 
     where('month', '==', month),
     where('year', '==', year)
@@ -202,19 +200,17 @@ export async function fetchSubmissionsForMonth(db: Firestore, month: number, yea
   
   if (submissions.length === 0) return [];
 
-  // 2. Fetch all personnel and create a lookup map
   const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
   const personnelSnap = await getDocs(personnelCol);
   const nspsMap = new Map<string, NSP>();
   personnelSnap.docs.forEach(doc => nspsMap.set(doc.id, { id: doc.id, ...doc.data() } as NSP));
   
-  // 3. Join submissions with personnel data
   const enrichedSubmissions: SubmissionWithNSP[] = submissions.map(sub => {
     const nsp = nspsMap.get(sub.nspId);
     return {
       ...sub,
       nspFullName: nsp?.fullName ?? 'N/A',
-      nspServiceNumber: nsp?.serviceNumber ?? 'N/A'
+      nspNssNumber: nsp?.nssNumber ?? 'N/A'
     };
   });
 
@@ -225,7 +221,6 @@ export async function fetchSubmissionsForMonth(db: Firestore, month: number, yea
 export async function getMonthlySubmissionStats(db: Firestore, month: number, year: number): Promise<{ submitted: number, pending: number, total: number }> {
     const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
     
-    // Queries
     const activePersonnelQuery = getDocs(query(personnelCol, where('isDisabled', '==', false)));
     const submissionsQuery = getDocs(query(
       collectionGroup(db, 'submissions'),
@@ -233,7 +228,6 @@ export async function getMonthlySubmissionStats(db: Firestore, month: number, ye
       where('year', '==', year)
     ));
     
-    // Run in parallel
     const [activePersonnelSnapshot, submissionsSnapshot] = await Promise.all([
       activePersonnelQuery,
       submissionsQuery
