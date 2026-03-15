@@ -52,7 +52,7 @@ export function DeleteNSPButton({ id, name, onDeleted }: { id: string; name: str
     }
     setIsPending(true);
     try {
-      await deleteNspPermanently(firestore, 'district1', id, name, { uid: user.uid, email: user.email });
+      await deleteNspPermanently(firestore, 'district1', id, { uid: user.uid, email: user.email });
       toast({ title: "Success", description: "NSP record has been permanently deleted." });
       onDeleted();
     } catch (error: any) {

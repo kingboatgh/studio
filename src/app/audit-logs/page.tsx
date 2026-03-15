@@ -53,7 +53,7 @@ function AuditLogDetails({ log }: { log: AuditLog }) {
             return (
                 <div className="text-sm space-y-1">
                     <p><span className="font-medium text-muted-foreground">Name:</span> {details.nspName}</p>
-                    <p><span className="font-medium text-muted-foreground">ID:</span> <code className="text-xs bg-muted/80 px-1 py-0.5 rounded">{details.nspId}</code></p>
+                    <p><span className="font-medium text-muted-foreground">NSS No:</span> <code className="text-xs bg-muted/80 px-1 py-0.5 rounded">{details.nssNumber}</code></p>
                 </div>
             );
         case 'CLEARED_ALL_NSP_RECORDS':

@@ -321,10 +321,18 @@ export async function createAuditLog(db: Firestore, admin: { uid: string; email?
   });
 }
 
-export async function deleteNspPermanently(db: Firestore, districtId: string, nspId: string, nspName: string, adminUser: {uid: string, email?: string | null}) {
+export async function deleteNspPermanently(db: Firestore, districtId: string, nspId: string, adminUser: {uid: string, email?: string | null}) {
   if (!adminUser) throw new Error("Admin user is required for this action.");
 
   const nspDocRef = doc(db, 'districts', districtId, 'personnel', nspId);
+  
+  const nspDoc = await getDoc(nspDocRef);
+  if (!nspDoc.exists()) {
+      console.warn(`Attempted to delete non-existent NSP record: ${nspId}`);
+      return;
+  }
+  const nspData = nspDoc.data() as NSP;
+
   const submissionsColRef = collection(db, 'districts', districtId, 'personnel', nspId, 'submissions');
 
   // Delete all submissions in the subcollection
@@ -336,7 +344,11 @@ export async function deleteNspPermanently(db: Firestore, districtId: string, ns
   await deleteDoc(nspDocRef);
 
   // Create an audit log
-  await createAuditLog(db, adminUser, 'PERMANENTLY_DELETED_NSP', { nspId, nspName });
+  await createAuditLog(db, adminUser, 'PERMANENTLY_DELETED_NSP', { 
+    nspId: nspId,
+    nspName: nspData.fullName,
+    nssNumber: nspData.nssNumber,
+  });
 }
 
 export async function fetchAuditLogs(db: Firestore): Promise<AuditLog[]> {
