@@ -44,19 +44,19 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <Card className="mx-auto max-w-sm w-full shadow-2xl shadow-black/10">
-        <CardHeader className="text-center p-8">
+        <CardHeader className="text-center p-6">
             <div className="flex justify-center items-center gap-4 mb-4">
-               <div className="bg-primary p-3 rounded-2xl">
-                 <Building className="h-8 w-8 text-primary-foreground" />
+               <div className="bg-primary p-3 rounded-xl">
+                 <Building className="h-6 w-6 text-primary-foreground" />
                </div>
-               <h1 className="text-3xl font-bold tracking-tight">NSP Digital</h1>
+               <h1 className="text-2xl font-bold tracking-tight">NSP Digital</h1>
             </div>
           <CardTitle>Welcome Back</CardTitle>
           <CardDescription>
             Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
-        <CardContent className="px-8 pb-8">
+        <CardContent className="px-6 pb-6">
           <form onSubmit={handleLogin} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -88,7 +88,7 @@ export default function LoginPage() {
                 <AlertDescription>{error}</AlertDescription>
              </Alert>
            )}
-            <Button type="submit" className="w-full" disabled={isPending} size="lg">
+            <Button type="submit" className="w-full" disabled={isPending}>
               {isPending ? 'Logging in...' : 'Login'}
             </Button>
           </form>

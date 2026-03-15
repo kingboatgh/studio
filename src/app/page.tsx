@@ -43,9 +43,9 @@ export default function DashboardPage() {
   const submissionPercentage = stats && stats.activeNsps > 0 ? (stats.submittedThisMonth / stats.activeNsps) * 100 : 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-4xl font-bold tracking-tighter">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
           An overview of NSP submissions for {format(new Date(), 'MMMM yyyy')}.
         </p>
@@ -74,11 +74,11 @@ export default function DashboardPage() {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>Monthly Progress</CardTitle>
-              {loading ? <Skeleton className="h-8 w-20" /> : <p className="text-3xl font-bold text-primary">{Math.round(submissionPercentage)}%</p>}
+              {loading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold text-primary">{Math.round(submissionPercentage)}%</p>}
             </div>
           </CardHeader>
-          <CardContent className="space-y-4 pt-2">
-             {loading ? <Skeleton className="h-3 w-full" /> : <Progress value={submissionPercentage} className="h-3" />}
+          <CardContent className="space-y-4">
+             {loading ? <Skeleton className="h-2 w-full" /> : <Progress value={submissionPercentage} className="h-2" />}
              <div className="flex justify-between text-sm text-muted-foreground">
                 {loading ? <Skeleton className="h-5 w-24" /> : <span>{stats?.submittedThisMonth} submitted</span>}
                 {loading ? <Skeleton className="h-5 w-24" /> : <span>{stats?.pendingThisMonth} pending</span>}
@@ -110,12 +110,12 @@ function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: st
       <CardContent className="p-6 flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          {loading ? <Skeleton className="h-10 w-20 mt-1" /> : (
-            <p className="text-4xl font-bold">{value?.toLocaleString() ?? 0}</p>
+          {loading ? <Skeleton className="h-9 w-16 mt-1" /> : (
+            <p className="text-3xl font-bold">{value?.toLocaleString() ?? 0}</p>
           )}
         </div>
-        <div className={cn("h-14 w-14 rounded-xl flex items-center justify-center", colors.bg)}>
-          {React.cloneElement(icon as React.ReactElement, { className: cn("h-8 w-8", colors.text)})}
+        <div className={cn("h-12 w-12 rounded-lg flex items-center justify-center", colors.bg)}>
+          {React.cloneElement(icon as React.ReactElement, { className: cn("h-6 w-6", colors.text)})}
         </div>
       </CardContent>
     </Card>
