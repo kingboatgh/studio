@@ -26,10 +26,12 @@ export type Submission = {
 export type SubmissionWithNSP = Submission & {
   nspFullName: string;
   nspServiceNumber: string;
+  nspPosting?: string;
 }
 
 export type DashboardStats = {
   totalNsps: number;
+  activeNsps: number;
   submittedThisMonth: number;
   pendingThisMonth: number;
 };

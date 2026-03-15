@@ -13,6 +13,8 @@ import {
   type Firestore,
   collectionGroup,
   Timestamp,
+  orderBy,
+  limit,
 } from 'firebase/firestore';
 
 // Assume a default district for now
@@ -68,14 +70,17 @@ export async function fetchNspById(db: Firestore, id: string): Promise<NSP | und
 export async function getDashboardStats(db: Firestore): Promise<DashboardStats> {
     const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
-    const personnelSnapshot = await getDocs(query(personnelCol, where('isDisabled', '==', false)));
-    const totalNsps = personnelSnapshot.size;
+    const allPersonnelSnapshot = await getDocs(personnelCol);
+    const totalNsps = allPersonnelSnapshot.size;
+
+    const activePersonnelSnapshot = await getDocs(query(personnelCol, where('isDisabled', '==', false)));
+    const activeNsps = activePersonnelSnapshot.size;
     
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
 
     let submittedThisMonth = 0;
-    for (const nspDoc of personnelSnapshot.docs) {
+    for (const nspDoc of activePersonnelSnapshot.docs) {
         const submissionId = `${currentYear}-${currentMonth}`;
         const subDocRef = doc(db, `districts/${DISTRICT_ID}/personnel/${nspDoc.id}/submissions`, submissionId);
         const subDocSnap = await getDoc(subDocRef);
@@ -86,9 +91,43 @@ export async function getDashboardStats(db: Firestore): Promise<DashboardStats> 
     
     return {
         totalNsps,
+        activeNsps,
         submittedThisMonth,
-        pendingThisMonth: totalNsps - submittedThisMonth,
+        pendingThisMonth: activeNsps - submittedThisMonth,
     };
+}
+
+export async function fetchRecentSubmissions(db: Firestore, count: number): Promise<SubmissionWithNSP[]> {
+  const submissionsColGroup = collectionGroup(db, 'submissions');
+  const q = query(submissionsColGroup, orderBy('timestamp', 'desc'), limit(count));
+  
+  const querySnapshot = await getDocs(q);
+  
+  const recentSubmissions: SubmissionWithNSP[] = [];
+  
+  for (const subDoc of querySnapshot.docs) {
+    const submission = subDoc.data() as Submission;
+    
+    const pathParts = subDoc.ref.path.split('/');
+    const personnelId = pathParts[3];
+    const districtId = pathParts[1];
+    
+    const nspRef = doc(db, 'districts', districtId, 'personnel', personnelId);
+    const nspSnap = await getDoc(nspRef);
+    
+    if (nspSnap.exists()) {
+      const nsp = nspSnap.data() as NSP;
+      recentSubmissions.push({
+        id: subDoc.id,
+        ...submission,
+        nspFullName: nsp.fullName,
+        nspServiceNumber: nsp.serviceNumber,
+        nspPosting: nsp.posting,
+      });
+    }
+  }
+  
+  return recentSubmissions;
 }
 
 
