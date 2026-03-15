@@ -2,14 +2,23 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getDashboardStats, fetchSubmissionsForMonth } from "@/lib/data";
-import { Users, CheckCircle, AlertCircle, FileDown } from "lucide-react";
+import { Users, CheckCircle, AlertCircle, FileDown, FileCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { DashboardStats, SubmissionWithNSP } from '@/lib/definitions';
+import type { DashboardStats } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import Papa from 'papaparse';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+// Add declaration for jspdf-autotable plugin
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
 
 const months = [
   { value: 1, label: 'January' }, { value: 2, label: 'February' },
@@ -26,7 +35,8 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const [reportMonth, setReportMonth] = useState<number>(new Date().getMonth() + 1);
   const [reportYear, setReportYear] = useState<number>(new Date().getFullYear());
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   useEffect(() => {
     async function fetchStats() {
@@ -44,16 +54,16 @@ export default function DashboardPage() {
     fetchStats();
   }, [firestore]);
 
-  const handleExport = async () => {
+  const handleExportCsv = async () => {
     if (!firestore) return;
-    setIsExporting(true);
+    setIsExportingCsv(true);
 
     try {
       const submissions = await fetchSubmissionsForMonth(firestore, reportMonth, reportYear);
       
       if (submissions.length === 0) {
         alert('No submissions found for the selected period.');
-        setIsExporting(false);
+        setIsExportingCsv(false);
         return;
       }
       
@@ -79,10 +89,57 @@ export default function DashboardPage() {
       document.body.removeChild(link);
 
     } catch (error) {
-      console.error('Failed to export report:', error);
-      alert('An error occurred while exporting the report.');
+      console.error('Failed to export CSV report:', error);
+      alert('An error occurred while exporting the CSV report.');
     } finally {
-      setIsExporting(false);
+      setIsExportingCsv(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!firestore) return;
+    setIsExportingPdf(true);
+
+    try {
+      const submissions = await fetchSubmissionsForMonth(firestore, reportMonth, reportYear);
+      
+      if (submissions.length === 0) {
+        alert('No submissions found for the selected period.');
+        setIsExportingPdf(false);
+        return;
+      }
+      
+      const doc = new jsPDF();
+      
+      doc.text(`Submission Report - ${months.find(m => m.value === reportMonth)?.label} ${reportYear}`, 14, 16);
+      
+      const tableColumn = ["NSP ID", "Full Name", "Service Number", "Submitted By", "Timestamp"];
+      const tableRows: (string | number)[][] = [];
+
+      submissions.forEach(sub => {
+        const submissionData = [
+          sub.nspId,
+          sub.nspFullName,
+          sub.nspServiceNumber,
+          sub.deskOfficerName ?? 'N/A',
+          sub.timestamp.toDate().toLocaleString(),
+        ];
+        tableRows.push(submissionData);
+      });
+
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+      });
+      
+      doc.save(`submissions_${reportYear}_${reportMonth}.pdf`);
+
+    } catch (error) {
+      console.error('Failed to export PDF report:', error);
+      alert('An error occurred while exporting the PDF report.');
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -143,11 +200,11 @@ export default function DashboardPage() {
         <CardHeader>
             <div>
                 <CardTitle>Monthly Reports</CardTitle>
-                <CardDescription>Export submission reports for any given month.</CardDescription>
+                <CardDescription>Export submission reports for any given month as CSV or PDF.</CardDescription>
             </div>
         </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex-1 w-full sm:w-auto">
+        <CardContent className="flex flex-col sm:flex-row items-center gap-4 flex-wrap">
+            <div className="flex-1 min-w-[150px]">
               <Select value={String(reportMonth)} onValueChange={(val) => setReportMonth(Number(val))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select month" />
@@ -159,7 +216,7 @@ export default function DashboardPage() {
                 </SelectContent>
               </Select>
             </div>
-             <div className="flex-1 w-full sm:w-auto">
+             <div className="flex-1 min-w-[100px]">
               <Input 
                 type="number" 
                 value={reportYear} 
@@ -167,9 +224,13 @@ export default function DashboardPage() {
                 placeholder="Year"
               />
             </div>
-            <Button onClick={handleExport} disabled={isExporting} className="w-full sm:w-auto">
+            <Button onClick={handleExportCsv} disabled={isExportingCsv || isExportingPdf} className="w-full sm:w-auto">
                 <FileDown className="mr-2 h-4 w-4" />
-                {isExporting ? 'Exporting...' : 'Export Report'}
+                {isExportingCsv ? 'Exporting...' : 'Export CSV'}
+            </Button>
+            <Button onClick={handleExportPdf} disabled={isExportingPdf || isExportingCsv} className="w-full sm:w-auto" variant="outline">
+                <FileCode className="mr-2 h-4 w-4" />
+                {isExportingPdf ? 'Exporting...' : 'Export PDF'}
             </Button>
         </CardContent>
       </Card>
