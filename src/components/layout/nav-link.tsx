@@ -17,8 +17,8 @@ export default function NavLink({ href, children }: NavLinkProps) {
     <Link
       href={href}
       className={cn(
-        'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-        isActive && 'bg-primary/10 font-bold text-primary',
+        'flex items-center gap-4 rounded-lg px-4 py-3 text-muted-foreground transition-all hover:text-primary',
+        isActive && 'bg-background font-semibold text-primary shadow-sm',
       )}
     >
       {children}

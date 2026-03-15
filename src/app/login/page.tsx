@@ -42,21 +42,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <Card className="mx-auto max-w-sm w-full">
-        <CardHeader className="text-center">
-            <div className="flex justify-center items-center gap-2 mb-4">
-               <div className="bg-primary p-2 rounded-lg">
-                 <Building className="h-6 w-6 text-primary-foreground" />
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+      <Card className="mx-auto max-w-sm w-full shadow-2xl shadow-black/10">
+        <CardHeader className="text-center p-8">
+            <div className="flex justify-center items-center gap-4 mb-4">
+               <div className="bg-primary p-3 rounded-2xl">
+                 <Building className="h-8 w-8 text-primary-foreground" />
                </div>
-               <h1 className="text-2xl font-bold">NSP Digital</h1>
+               <h1 className="text-3xl font-bold tracking-tight">NSP Digital</h1>
             </div>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle>Welcome Back</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-8 pb-8">
           <form onSubmit={handleLogin} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -88,7 +88,7 @@ export default function LoginPage() {
                 <AlertDescription>{error}</AlertDescription>
              </Alert>
            )}
-            <Button type="submit" className="w-full" disabled={isPending}>
+            <Button type="submit" className="w-full" disabled={isPending} size="lg">
               {isPending ? 'Logging in...' : 'Login'}
             </Button>
           </form>

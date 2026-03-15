@@ -177,21 +177,20 @@ function MonthlySubmissionsComponent() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <p className="text-muted-foreground">{format(new Date(), 'EEEE, d MMMM yyyy')}</p>
-        <h1 className="text-3xl font-bold tracking-tight mt-1">Monthly Submissions</h1>
-        <p className="text-muted-foreground">
-          Record and track NSP monthly evaluation form submissions
+        <h1 className="text-4xl font-bold tracking-tighter">Monthly Submissions</h1>
+        <p className="text-muted-foreground mt-1">
+          Record and track NSP monthly evaluation form submissions.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Quick Submission</CardTitle>
-              <CardDescription>Search by NSP ID, Service Number, or Name</CardDescription>
+              <CardDescription>Search by NSP ID, Service Number, or Name.</CardDescription>
             </CardHeader>
             <CardContent>
               <Search placeholder="Enter NSP ID (e.g., LDM0001)" />
@@ -200,8 +199,9 @@ function MonthlySubmissionsComponent() {
           <Card>
             <CardHeader>
               <CardTitle>Select Period</CardTitle>
+              <CardDescription>Filter submissions by month and year.</CardDescription>
             </CardHeader>
-            <CardContent className="flex gap-4">
+            <CardContent className="grid grid-cols-2 gap-4">
               <Select value={String(selectedDate.getMonth() + 1)} onValueChange={handleMonthChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select month" />
@@ -223,66 +223,67 @@ function MonthlySubmissionsComponent() {
                 </SelectContent>
               </Select>
             </CardContent>
+             <CardHeader>
+                <CardTitle>Export Report</CardTitle>
+                <CardDescription>Download submission data for the selected period.</CardDescription>
+             </CardHeader>
+             <CardContent className="grid grid-cols-2 gap-4">
+                <Button variant="outline" onClick={handleExportCsv} disabled={isExportingCsv}>
+                    <FileDown className="mr-2 h-4 w-4" /> 
+                    {isExportingCsv ? 'Exporting...' : 'CSV'}
+                </Button>
+                <Button variant="outline" onClick={handleExportPdf} disabled={isExportingPdf}>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    {isExportingPdf ? 'Exporting...' : 'PDF'}
+                </Button>
+            </CardContent>
           </Card>
         </div>
 
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle>{format(selectedDate, 'MMMM yyyy')} Status</CardTitle>
-                </div>
-                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleExportCsv} disabled={isExportingCsv}>
-                    <FileDown className="mr-2 h-4 w-4" /> 
-                    {isExportingCsv ? 'Exporting...' : 'Export CSV'}
-                  </Button>
-                  <Button variant="outline" onClick={handleExportPdf} disabled={isExportingPdf}>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    {isExportingPdf ? 'Exporting...' : 'Export PDF'}
-                  </Button>
-                </div>
-              </div>
+              <CardTitle>{format(selectedDate, 'MMMM yyyy')} Status</CardTitle>
+              <CardDescription>Overview of personnel submissions for the selected period.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <Card className="border-primary border-2 shadow-sm">
-                  <CardContent className="p-4">
-                    {loading ? <Skeleton className="h-6 w-8 mb-1" /> : <p className="text-2xl font-bold">{stats.pending}</p>}
+                <Card>
+                  <CardContent className="p-6">
+                    {loading ? <Skeleton className="h-8 w-12 mb-1" /> : <p className="text-3xl font-bold">{stats.pending}</p>}
                     <p className="text-sm text-muted-foreground">Pending</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-4">
-                    {loading ? <Skeleton className="h-6 w-8 mb-1" /> : <p className="text-2xl font-bold">{stats.submitted}</p>}
+                  <CardContent className="p-6">
+                    {loading ? <Skeleton className="h-8 w-12 mb-1" /> : <p className="text-3xl font-bold">{stats.submitted}</p>}
                     <p className="text-sm text-muted-foreground">Submitted</p>
                   </CardContent>
                 </Card>
               </div>
-              <div className="flex justify-between items-center gap-2">
+              <div className="flex justify-between items-center gap-2 border-t pt-4">
                 <div className="relative flex-1">
                   <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
-                    placeholder="Search list..." 
+                    placeholder="Search personnel list..." 
                     className="pl-10" 
                     value={listQuery}
                     onChange={(e) => setListQuery(e.target.value)}
                   />
                 </div>
-                <div>
-                  <Button variant={view === 'grid' ? 'default' : 'ghost'} size="icon" onClick={() => setView('grid')}>
+                <div className="flex items-center rounded-lg p-1 bg-muted">
+                  <Button variant={view === 'grid' ? 'secondary' : 'ghost'} size="icon" onClick={() => setView('grid')}>
                     <LayoutGrid className="h-5 w-5" />
                   </Button>
-                  <Button variant={view === 'list' ? 'default' : 'ghost'} size="icon" onClick={() => setView('list')}>
+                  <Button variant={view === 'list' ? 'secondary' : 'ghost'} size="icon" onClick={() => setView('list')}>
                     <List className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
               
               {loading ? (
-                <div className="space-y-2 pt-4">
-                  {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+                <div className="space-y-3 pt-4">
+                  {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
                 </div>
               ) : (
                 <SubmissionList nsps={filteredNsps} view={view} onSubmissionSuccess={fetchData} />
@@ -297,26 +298,22 @@ function MonthlySubmissionsComponent() {
 
 function SubmissionList({ nsps, view, onSubmissionSuccess }: { nsps: NSP[], view: string, onSubmissionSuccess: () => void }) {
   if (nsps.length === 0) {
-      return <p className="text-center text-muted-foreground py-8">No personnel found.</p>
+      return <p className="text-center text-muted-foreground py-12">No personnel found for this period or filter.</p>
   }
 
   if (view === 'grid') {
       return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
           {nsps.map(nsp => (
-            <Card key={nsp.id}>
-              <CardContent className="p-4 flex flex-col items-start gap-4">
-                <div>
-                  <p className="font-semibold">
-                    <span className="text-primary">{nsp.id}</span>
-                  </p>
-                  <p>{nsp.fullName}</p>
-                  <p className="text-sm text-muted-foreground">{nsp.posting}</p>
-                </div>
-                <div className="w-full">
-                  <SubmitButton nsp={nsp} onSubmissionSuccess={onSubmissionSuccess} />
-                </div>
+            <Card key={nsp.id} className="flex flex-col">
+              <CardContent className="p-4 flex-grow">
+                <p className="font-semibold">{nsp.fullName}</p>
+                <p className="text-sm text-primary font-mono">{nsp.id}</p>
+                <p className="text-sm text-muted-foreground">{nsp.posting}</p>
               </CardContent>
+              <div className="border-t p-4">
+                <SubmitButton nsp={nsp} onSubmissionSuccess={onSubmissionSuccess} />
+              </div>
             </Card>
           ))}
         </div>
@@ -329,12 +326,12 @@ function SubmissionList({ nsps, view, onSubmissionSuccess }: { nsps: NSP[], view
               <Card key={nsp.id}>
                   <CardContent className="p-3 flex justify-between items-center">
                       <div>
-                          <p className="font-semibold">
-                              <span className="text-primary">{nsp.id}</span>
-                              <span className="text-foreground mx-2">•</span>
-                              <span>{nsp.fullName}</span>
+                          <p className="font-semibold">{nsp.fullName}</p>
+                          <p className="text-sm text-muted-foreground">
+                              <span className="font-mono">{nsp.id}</span>
+                              <span className="mx-2">•</span>
+                              <span>{nsp.posting}</span>
                           </p>
-                          <p className="text-sm text-muted-foreground">{nsp.posting}</p>
                       </div>
                       <SubmitButton nsp={nsp} onSubmissionSuccess={onSubmissionSuccess} />
                   </CardContent>
@@ -346,7 +343,7 @@ function SubmissionList({ nsps, view, onSubmissionSuccess }: { nsps: NSP[], view
 
 export default function MonthlySubmissionsPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-muted-foreground">Loading Submissions...</div>}>
       <MonthlySubmissionsComponent />
     </Suspense>
   )

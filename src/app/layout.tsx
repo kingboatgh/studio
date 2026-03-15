@@ -18,18 +18,15 @@ export default function RootLayout({
       <head>
         <title>NSP Digital Submissions</title>
         <meta name="description" content="NSP Management and Monthly Submission System" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=PT+Sans&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased">
+      <body className="antialiased">
         <FirebaseClientProvider>
             <AuthGuard>
-              <div className="flex min-h-screen w-full bg-background">
+              <div className="flex min-h-screen w-full bg-secondary">
                 <Sidebar />
                 <div className="flex flex-1 flex-col">
                   <Header />
-                  <main className="flex-1 p-4 md:p-8">
+                  <main className="flex-1 p-4 md:p-8 lg:p-12">
                     {children}
                   </main>
                 </div>
@@ -59,7 +56,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   if (isUserLoading || (!user && pathname !== '/login') || (user && pathname === '/login')) {
     return (
         <div className="flex min-h-screen w-full items-center justify-center bg-background">
-            <div className="w-full max-w-md space-y-4">
+            <div className="w-full max-w-md space-y-4 rounded-xl p-8">
                 <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />

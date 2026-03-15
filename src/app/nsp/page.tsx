@@ -17,17 +17,18 @@ export default function NspRegistryPage() {
   const currentPage = Number(searchParams.get('page')) || 1;
   
   return (
-    <Card>
-      <CardContent className="p-4 md:p-6 space-y-4">
+    <div className="space-y-6">
         <div className="flex items-center justify-between gap-4">
-          <Search placeholder="Search by Name, ID, or Service Number..." />
-          <AddNSPButton />
+          <h1 className="text-3xl font-bold tracking-tight">NSP Registry</h1>
+          <div className="flex items-center gap-4">
+            <Search placeholder="Search by Name, ID, or Service Number..." />
+            <AddNSPButton />
+          </div>
         </div>
         <Suspense key={query + currentPage} fallback={<TableSkeleton />}>
           <NSPList query={query} currentPage={currentPage} />
         </Suspense>
-      </CardContent>
-    </Card>
+    </div>
   );
 }
 
@@ -67,10 +68,8 @@ function NSPList({query, currentPage}: {query: string, currentPage: number}) {
 
 function TableSkeleton() {
   return (
-    <div className="rounded-md border">
-      <div className="p-4 space-y-2">
-        {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-      </div>
+    <div className="rounded-xl border bg-card p-4 space-y-2">
+      {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
     </div>
   )
 }

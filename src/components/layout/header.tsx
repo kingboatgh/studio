@@ -46,7 +46,7 @@ export default function Header() {
   }
 
   return (
-    <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30">
+    <header className="flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 sticky top-0 z-30">
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" className="shrink-0 md:hidden">
@@ -54,11 +54,13 @@ export default function Header() {
             <span className="sr-only">Toggle navigation menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left">
-          <nav className="grid gap-6 text-lg font-medium">
+        <SheetContent side="left" className="bg-secondary">
+          <nav className="grid gap-6 text-lg font-medium p-6">
             <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary">
-              <Building className="h-6 w-6" />
-              <span>NSP Digital</span>
+              <div className="bg-primary p-2 rounded-lg">
+                <Building className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <span className="text-foreground">NSP Digital</span>
             </Link>
             <NavLink href="/">
                 <LayoutDashboard className="h-5 w-5" />
@@ -79,8 +81,7 @@ export default function Header() {
           </nav>
         </SheetContent>
       </Sheet>
-      <div className="flex w-full items-center justify-between">
-        <h1 className="text-lg font-semibold md:text-xl">{getPageTitle(pathname)}</h1>
+      <div className="flex w-full items-center justify-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
@@ -92,7 +93,7 @@ export default function Header() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+            <DropdownMenuLabel>{user.displayName || user.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/profile">

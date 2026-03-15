@@ -43,20 +43,19 @@ export default function DashboardPage() {
   const submissionPercentage = stats && stats.activeNsps > 0 ? (stats.submittedThisMonth / stats.activeNsps) * 100 : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <p className="text-muted-foreground">{currentDate}</p>
-        <h1 className="text-3xl font-bold tracking-tight mt-1">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Overview of NSP management for {format(new Date(), 'MMMM yyyy')}
+        <h1 className="text-4xl font-bold tracking-tighter">Dashboard</h1>
+        <p className="text-muted-foreground mt-1">
+          An overview of NSP submissions for {format(new Date(), 'MMMM yyyy')}.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total NSPs" value={stats?.totalNsps} icon={<Users />} loading={loading} iconBgColor="bg-blue-500" />
-        <StatCard title="Active NSPs" value={stats?.activeNsps} icon={<User />} loading={loading} iconBgColor="bg-sky-500" />
-        <StatCard title="Submitted" value={stats?.submittedThisMonth} icon={<ClipboardCheck />} loading={loading} iconBgColor="bg-green-500" />
-        <StatCard title="Pending" value={stats?.pendingThisMonth} icon={<Clock />} loading={loading} iconBgColor="bg-orange-500" />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Total NSPs" value={stats?.totalNsps} icon={<Users />} loading={loading} variant="blue" />
+        <StatCard title="Active NSPs" value={stats?.activeNsps} icon={<User />} loading={loading} variant="sky" />
+        <StatCard title="Submitted" value={stats?.submittedThisMonth} icon={<ClipboardCheck />} loading={loading} variant="green" />
+        <StatCard title="Pending" value={stats?.pendingThisMonth} icon={<Clock />} loading={loading} variant="orange" />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
@@ -64,7 +63,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="grid gap-3">
             <ActionButton href="/submissions" isPrimary>Record Submission</ActionButton>
             <ActionButton href="/nsp/new">Add New NSP</ActionButton>
             <ActionButton href="/submissions">View Reports</ActionButton>
@@ -75,19 +74,19 @@ export default function DashboardPage() {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>Monthly Progress</CardTitle>
-              {loading ? <Skeleton className="h-7 w-16" /> : <p className="text-2xl font-bold text-primary">{Math.round(submissionPercentage)}%</p>}
+              {loading ? <Skeleton className="h-8 w-20" /> : <p className="text-3xl font-bold text-primary">{Math.round(submissionPercentage)}%</p>}
             </div>
           </CardHeader>
           <CardContent className="space-y-4 pt-2">
-             {loading ? <Skeleton className="h-4 w-full" /> : <Progress value={submissionPercentage} className="h-2" />}
+             {loading ? <Skeleton className="h-3 w-full" /> : <Progress value={submissionPercentage} className="h-3" />}
              <div className="flex justify-between text-sm text-muted-foreground">
                 {loading ? <Skeleton className="h-5 w-24" /> : <span>{stats?.submittedThisMonth} submitted</span>}
                 {loading ? <Skeleton className="h-5 w-24" /> : <span>{stats?.pendingThisMonth} pending</span>}
              </div>
              { !loading && stats && stats.pendingThisMonth > 0 && (
-                <div className="bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg p-3 flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5"/>
-                    <span>{stats?.pendingThisMonth} NSPs yet to submit for {format(new Date(), 'MMMM')}</span>
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg p-3 flex items-center gap-3">
+                    <TrendingUp className="h-5 w-5 flex-shrink-0"/>
+                    <span>{stats?.pendingThisMonth} NSPs are yet to submit for {format(new Date(), 'MMMM')}.</span>
                 </div>
              )}
           </CardContent>
@@ -97,18 +96,26 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ title, value, icon, iconBgColor, loading }: { title: string, value?: number, icon: React.ReactNode, iconBgColor: string, loading: boolean }) {
+const statCardVariants = {
+  blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
+  sky: { bg: 'bg-sky-100', text: 'text-sky-600' },
+  green: { bg: 'bg-green-100', text: 'text-green-600' },
+  orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
+}
+
+function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: string, value?: number, icon: React.ReactNode, loading: boolean, variant?: keyof typeof statCardVariants }) {
+  const colors = statCardVariants[variant];
   return (
     <Card>
-      <CardContent className="p-4 flex items-center justify-between">
+      <CardContent className="p-6 flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
-          {loading ? <Skeleton className="h-8 w-16 mt-1" /> : (
-            <p className="text-3xl font-bold">{value?.toLocaleString() ?? 0}</p>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          {loading ? <Skeleton className="h-10 w-20 mt-1" /> : (
+            <p className="text-4xl font-bold">{value?.toLocaleString() ?? 0}</p>
           )}
         </div>
-        <div className={cn("h-12 w-12 rounded-lg flex items-center justify-center", iconBgColor)}>
-          {React.cloneElement(icon as React.ReactElement, { className: "h-6 w-6 text-white"})}
+        <div className={cn("h-14 w-14 rounded-xl flex items-center justify-center", colors.bg)}>
+          {React.cloneElement(icon as React.ReactElement, { className: cn("h-8 w-8", colors.text)})}
         </div>
       </CardContent>
     </Card>
@@ -120,7 +127,7 @@ function ActionButton({ href, children, isPrimary = false }: { href: string, chi
     <Link href={href}>
       <Button
         variant={isPrimary ? "default" : "outline"}
-        className={cn("w-full justify-between", isPrimary ? "bg-green-600 hover:bg-green-700 text-white" : "")}
+        className="w-full justify-between"
       >
         {children}
         <ArrowRight className="h-4 w-4" />
