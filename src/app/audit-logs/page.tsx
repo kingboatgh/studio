@@ -32,6 +32,46 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 
+
+const formatAction = (action: string) => {
+    if (!action) return 'Unknown Action';
+    return action
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+};
+
+function AuditLogDetails({ log }: { log: AuditLog }) {
+    const details = log.details;
+
+    if (!details) {
+        return <span className="text-muted-foreground">No details</span>;
+    }
+
+    switch (log.action) {
+        case 'PERMANENTLY_DELETED_NSP':
+            return (
+                <div className="text-sm space-y-1">
+                    <p><span className="font-medium text-muted-foreground">Name:</span> {details.nspName}</p>
+                    <p><span className="font-medium text-muted-foreground">ID:</span> <code className="text-xs bg-muted/80 px-1 py-0.5 rounded">{details.nspId}</code></p>
+                </div>
+            );
+        case 'CLEARED_ALL_NSP_RECORDS':
+            return (
+                <div className="text-sm">
+                    <p><span className="font-medium text-muted-foreground">Records Deleted:</span> {details.deletedCount}</p>
+                </div>
+            );
+        default:
+            return (
+                <pre className="text-xs bg-muted p-2 rounded-md font-mono">
+                    {JSON.stringify(details, null, 2)}
+                </pre>
+            );
+    }
+}
+
+
 export default function AuditLogsPage() {
     const { isAdmin, isAdminLoading } = useAdmin();
     const router = useRouter();
@@ -140,8 +180,8 @@ function AuditLogsContent() {
                             ) : logs.length > 0 ? (
                                 logs.map(log => (
                                     <TableRow key={log.id}>
-                                        <TableCell className="font-medium">{log.action}</TableCell>
-                                        <TableCell><pre className="text-xs bg-muted p-2 rounded-md font-mono">{JSON.stringify(log.details, null, 2)}</pre></TableCell>
+                                        <TableCell className="font-medium">{formatAction(log.action)}</TableCell>
+                                        <TableCell><AuditLogDetails log={log} /></TableCell>
                                         <TableCell>{log.adminEmail}</TableCell>
                                         <TableCell>{log.timestamp?.toDate ? format(log.timestamp.toDate(), 'PPP p') : 'Processing...'}</TableCell>
                                         <TableCell className="text-right">
