@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -69,10 +68,25 @@ function AuditLogsContent() {
     const getLogs = useCallback(async () => {
         if (!firestore) return;
         setLoading(true);
-        const logData = await fetchAuditLogs(firestore);
-        setLogs(logData);
-        setLoading(false);
-    }, [firestore]);
+        try {
+            const logData = await fetchAuditLogs(firestore);
+            setLogs(logData);
+        } catch (error: any) {
+             if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: 'auditLogs',
+                    operation: 'list',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to view audit logs.' });
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch audit logs.' });
+                console.error(error);
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [firestore, toast]);
 
     useEffect(() => {
         getLogs();
@@ -129,7 +143,7 @@ function AuditLogsContent() {
                                         <TableCell className="font-medium">{log.action}</TableCell>
                                         <TableCell><pre className="text-xs bg-muted p-2 rounded-md font-mono">{JSON.stringify(log.details, null, 2)}</pre></TableCell>
                                         <TableCell>{log.adminEmail}</TableCell>
-                                        <TableCell>{format(log.timestamp.toDate(), 'PPP p')}</TableCell>
+                                        <TableCell>{log.timestamp?.toDate ? format(log.timestamp.toDate(), 'PPP p') : 'Processing...'}</TableCell>
                                         <TableCell className="text-right">
                                             <DeleteLogButton logId={log.id} onDelete={handleDelete} />
                                         </TableCell>
