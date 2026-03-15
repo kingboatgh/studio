@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFirestore } from "@/firebase";
 import { fetchNsps, getMonthlySubmissionStats, fetchSubmissionsForMonth } from "@/lib/data";
-import type { NSP, SubmissionWithNSP } from "@/lib/definitions";
+import type { NSP } from "@/lib/definitions";
 import { SubmitButton } from "@/app/nsp/components/submit-button";
 import { FileDown, LayoutGrid, List, Search as SearchIcon } from 'lucide-react';
 import Papa from 'papaparse';
@@ -44,6 +44,7 @@ function MonthlySubmissionsComponent() {
   const [view, setView] = useState('list');
   const [listQuery, setListQuery] = useState('');
   const [isExportingCsv, setIsExportingCsv] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const firestore = useFirestore();
 
@@ -124,6 +125,48 @@ function MonthlySubmissionsComponent() {
     }
   };
 
+  const handleExportPdf = async () => {
+    if (!firestore) return;
+    setIsExportingPdf(true);
+
+    const month = selectedDate.getMonth() + 1;
+    const year = selectedDate.getFullYear();
+    const monthLabel = months.find(m => m.value === month)?.label;
+
+    try {
+        const submissions = await fetchSubmissionsForMonth(firestore, month, year);
+        if (submissions.length === 0) {
+            alert('No submissions found for the selected period.');
+            setIsExportingPdf(false);
+            return;
+        }
+
+        const doc = new jsPDF();
+        doc.text(`Submissions Report - ${monthLabel} ${year}`, 14, 15);
+
+        doc.autoTable({
+            startY: 20,
+            head: [['NSP ID', 'Full Name', 'Service Number', 'Submitted By', 'Timestamp']],
+            body: submissions.map(s => [
+                s.nspId,
+                s.nspFullName,
+                s.nspServiceNumber,
+                s.deskOfficerName || 'N/A',
+                s.timestamp.toDate().toLocaleString()
+            ]),
+        });
+
+        doc.save(`submissions_${year}_${month}.pdf`);
+
+    } catch (error) {
+        console.error('Failed to export PDF report:', error);
+        alert('An error occurred while exporting the PDF report.');
+    } finally {
+        setIsExportingPdf(false);
+    }
+  };
+
+
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
@@ -190,10 +233,16 @@ function MonthlySubmissionsComponent() {
                 <div>
                   <CardTitle>{format(selectedDate, 'MMMM yyyy')} Status</CardTitle>
                 </div>
-                <Button variant="outline" onClick={handleExportCsv} disabled={isExportingCsv}>
-                  <FileDown className="mr-2 h-4 w-4" /> 
-                  {isExportingCsv ? 'Exporting...' : 'Export CSV'}
-                </Button>
+                 <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleExportCsv} disabled={isExportingCsv}>
+                    <FileDown className="mr-2 h-4 w-4" /> 
+                    {isExportingCsv ? 'Exporting...' : 'Export CSV'}
+                  </Button>
+                  <Button variant="outline" onClick={handleExportPdf} disabled={isExportingPdf}>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    {isExportingPdf ? 'Exporting...' : 'Export PDF'}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

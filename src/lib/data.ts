@@ -9,12 +9,9 @@ import {
   where,
   serverTimestamp,
   addDoc,
-  writeBatch,
   type Firestore,
   collectionGroup,
   Timestamp,
-  orderBy,
-  limit,
 } from 'firebase/firestore';
 
 // Assume a default district for now
@@ -24,26 +21,32 @@ export async function fetchNsps(db: Firestore, options: { queryString?: string; 
   const { queryString, month, year } = options;
   const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
-  // 1. Fetch all NSPs
-  const querySnapshot = await getDocs(query(personnelCol, where('isDisabled', '==', false)));
-  let allNSPs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
+  // 1. Fetch all active NSPs in one go.
+  const nspQuery = query(personnelCol, where('isDisabled', '==', false));
   
-  // 2. Enrich NSP data with submission status for the selected month
-  const enrichedNSPs = await Promise.all(
-    allNSPs.map(async (nsp) => {
-      const submissionId = `${year}-${month}`;
-      const subDocRef = doc(db, `districts/${DISTRICT_ID}/personnel/${nsp.id}/submissions`, submissionId);
-      const subDocSnap = await getDoc(subDocRef);
-      return {
-        ...nsp,
-        hasSubmittedThisMonth: subDocSnap.exists(),
-      };
-    })
+  // 2. Fetch all submissions for the given month/year in one go.
+  const submissionsQuery = query(collectionGroup(db, 'submissions'), 
+    where('month', '==', month),
+    where('year', '==', year)
   );
+
+  const [nspSnapshot, submissionsSnapshot] = await Promise.all([
+    getDocs(nspQuery),
+    getDocs(submissionsQuery)
+  ]);
+
+  const allNSPs = nspSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
+  const submittedNspIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().nspId));
+
+  // 3. Enrich NSP data with submission status on the client (much faster than N+1 queries).
+  const enrichedNSPs = allNSPs.map(nsp => ({
+    ...nsp,
+    hasSubmittedThisMonth: submittedNspIds.has(nsp.id),
+  }));
   
   let filteredNSPs = enrichedNSPs;
 
-  // 3. Filter if a search query is provided
+  // 4. Filter if a search query is provided (client-side filtering remains for flexibility).
   if (queryString) {
     const lowercasedQuery = queryString.toLowerCase();
     filteredNSPs = enrichedNSPs.filter(nsp => 
@@ -55,6 +58,7 @@ export async function fetchNsps(db: Firestore, options: { queryString?: string; 
 
   return { nsps: filteredNSPs, total: filteredNSPs.length };
 }
+
 
 export async function fetchNspById(db: Firestore, id: string): Promise<NSP | undefined> {
     const docRef = doc(db, 'districts', DISTRICT_ID, 'personnel', id);
@@ -69,26 +73,29 @@ export async function fetchNspById(db: Firestore, id: string): Promise<NSP | und
 
 export async function getDashboardStats(db: Firestore): Promise<DashboardStats> {
     const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
-
-    const allPersonnelSnapshot = await getDocs(personnelCol);
-    const totalNsps = allPersonnelSnapshot.size;
-
-    const activePersonnelSnapshot = await getDocs(query(personnelCol, where('isDisabled', '==', false)));
-    const activeNsps = activePersonnelSnapshot.size;
-    
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
 
-    let submittedThisMonth = 0;
-    for (const nspDoc of activePersonnelSnapshot.docs) {
-        const submissionId = `${currentYear}-${currentMonth}`;
-        const subDocRef = doc(db, `districts/${DISTRICT_ID}/personnel/${nspDoc.id}/submissions`, submissionId);
-        const subDocSnap = await getDoc(subDocRef);
-        if (subDocSnap.exists()) {
-            submittedThisMonth++;
-        }
-    }
-    
+    // Queries
+    const allPersonnelQuery = getDocs(personnelCol);
+    const activePersonnelQuery = getDocs(query(personnelCol, where('isDisabled', '==', false)));
+    const submissionsQuery = getDocs(query(
+        collectionGroup(db, 'submissions'),
+        where('month', '==', currentMonth),
+        where('year', '==', currentYear)
+    ));
+
+    // Run in parallel
+    const [allPersonnelSnapshot, activePersonnelSnapshot, submissionsSnapshot] = await Promise.all([
+        allPersonnelQuery,
+        activePersonnelQuery,
+        submissionsQuery
+    ]);
+
+    const totalNsps = allPersonnelSnapshot.size;
+    const activeNsps = activePersonnelSnapshot.size;
+    const submittedThisMonth = submissionsSnapshot.size;
+
     return {
         totalNsps,
         activeNsps,
@@ -96,6 +103,7 @@ export async function getDashboardStats(db: Firestore): Promise<DashboardStats> 
         pendingThisMonth: activeNsps - submittedThisMonth,
     };
 }
+
 
 export async function createNewNSP(db: Firestore, data: Omit<NSP, 'id' | 'createdDate' | 'lastUpdatedDate' | 'serviceYear' | 'isDisabled'> & { districtId: string }) {
     const newId = generateNspId();
@@ -176,49 +184,60 @@ export async function checkServiceNumberUniqueness(db: Firestore, serviceNumber:
 }
 
 export async function fetchSubmissionsForMonth(db: Firestore, month: number, year: number): Promise<SubmissionWithNSP[]> {
+  // 1. Fetch all submissions for the month/year
+  const submissionsQuery = query(collectionGroup(db, 'submissions'), 
+    where('month', '==', month),
+    where('year', '==', year)
+  );
+  const submissionsSnapshot = await getDocs(submissionsQuery);
+  const submissions = submissionsSnapshot.docs.map(doc => doc.data() as Submission);
+  
+  if (submissions.length === 0) return [];
+
+  // 2. Fetch all personnel and create a lookup map
   const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
   const personnelSnap = await getDocs(personnelCol);
-  const nsps = personnelSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
+  const nspsMap = new Map<string, NSP>();
+  personnelSnap.docs.forEach(doc => nspsMap.set(doc.id, { id: doc.id, ...doc.data() } as NSP));
   
-  const enrichedSubmissions: SubmissionWithNSP[] = [];
-
-  for (const nsp of nsps) {
-    const submissionId = `${year}-${month}`;
-    const subDocRef = doc(db, `districts/${DISTRICT_ID}/personnel/${nsp.id}/submissions`, submissionId);
-    const subDocSnap = await getDoc(subDocRef);
-    
-    if (subDocSnap.exists()) {
-      const sub = subDocSnap.data() as Submission;
-      enrichedSubmissions.push({
-        ...sub,
-        nspFullName: nsp.fullName,
-        nspServiceNumber: nsp.serviceNumber
-      });
-    }
-  }
+  // 3. Join submissions with personnel data
+  const enrichedSubmissions: SubmissionWithNSP[] = submissions.map(sub => {
+    const nsp = nspsMap.get(sub.nspId);
+    return {
+      ...sub,
+      nspFullName: nsp?.fullName ?? 'N/A',
+      nspServiceNumber: nsp?.serviceNumber ?? 'N/A'
+    };
+  });
 
   return enrichedSubmissions;
 }
 
+
 export async function getMonthlySubmissionStats(db: Firestore, month: number, year: number): Promise<{ submitted: number, pending: number, total: number }> {
     const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
-    const personnelSnapshot = await getDocs(query(personnelCol, where('isDisabled', '==', false)));
-    const totalNsps = personnelSnapshot.size;
     
-    let submittedCount = 0;
-    for (const nspDoc of personnelSnapshot.docs) {
-        const submissionId = `${year}-${month}`;
-        const subDocRef = doc(db, `districts/${DISTRICT_ID}/personnel/${nspDoc.id}/submissions`, submissionId);
-        const subDocSnap = await getDoc(subDocRef);
-        if (subDocSnap.exists()) {
-            submittedCount++;
-        }
-    }
+    // Queries
+    const activePersonnelQuery = getDocs(query(personnelCol, where('isDisabled', '==', false)));
+    const submissionsQuery = getDocs(query(
+      collectionGroup(db, 'submissions'),
+      where('month', '==', month),
+      where('year', '==', year)
+    ));
+    
+    // Run in parallel
+    const [activePersonnelSnapshot, submissionsSnapshot] = await Promise.all([
+      activePersonnelQuery,
+      submissionsQuery
+    ]);
+    
+    const totalActive = activePersonnelSnapshot.size;
+    const submittedCount = submissionsSnapshot.size;
     
     return {
         submitted: submittedCount,
-        pending: totalNsps - submittedCount,
-        total: totalNsps,
+        pending: totalActive - submittedCount,
+        total: totalActive,
     };
 }
 
