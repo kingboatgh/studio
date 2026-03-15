@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFirestore } from "@/firebase";
 import { exportNspRegistry, getReportStats, exportSubmittedOrPending, getStaffSubmissionStats } from "@/lib/data";
 import type { NSP, StaffSubmissionStat } from "@/lib/definitions";
-import { FileDown, Users, ClipboardCheck, Clock, TrendingUp, FileText } from 'lucide-react';
+import { Users, ClipboardCheck, Clock, TrendingUp, FileText } from 'lucide-react';
 import Papa from 'papaparse';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -89,7 +89,6 @@ function ReportsComponent() {
                 'Next of Kin Name', 'Next of Kin Phone', 'Employed'
               ];
           } else if (type === 'monthly') {
-              // For monthly, it's a mix of submitted and pending, basically the whole registry with a status
               data = await exportSubmittedOrPending(firestore, month, year, undefined);
               filename = `monthly_report_${year}_${month}`;
               headers = ['System ID', 'Full Name', 'NSS Number', 'Posting', 'Submission Status'];
@@ -176,20 +175,16 @@ function ReportsComponent() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Reports & Export</h1>
-        <p className="text-muted-foreground mt-1">
-          Generate and download reports for submission tracking
-        </p>
-      </div>
-      
-      <Card>
-        <CardHeader>
-            <CardTitle>Select Report Period</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+        <div>
+            <h1 className="text-2xl font-bold tracking-tight">Reports & Export</h1>
+            <p className="text-muted-foreground mt-1">
+            Generate and download submission tracking reports
+            </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
             <Select value={String(selectedDate.getMonth() + 1)} onValueChange={handleMonthChange}>
-                <SelectTrigger className="h-9 w-full md:w-48">
+                <SelectTrigger className="h-9 w-[130px] text-xs">
                     <SelectValue placeholder="Select month" />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,7 +194,7 @@ function ReportsComponent() {
                 </SelectContent>
             </Select>
             <Select value={String(selectedDate.getFullYear())} onValueChange={handleYearChange}>
-                <SelectTrigger className="h-9 w-full md:w-48">
+                <SelectTrigger className="h-9 w-[100px] text-xs">
                     <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -208,96 +203,113 @@ function ReportsComponent() {
                   ))}
                 </SelectContent>
             </Select>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Active NSPs" value={stats.active} icon={<Users />} loading={loading} />
-        <StatCard title="Submitted" value={stats.submitted} icon={<ClipboardCheck />} loading={loading} />
-        <StatCard title="Pending" value={stats.pending} icon={<Clock />} loading={loading} />
-        <StatCard title="Completion" value={`${Math.round(completionPercentage)}%`} icon={<TrendingUp />} loading={loading} />
+        </div>
       </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <ReportCard
-            title="Monthly Submission Report"
-            description={`Complete report for ${format(selectedDate, 'MMMM yyyy')}`}
-            onCsvExport={() => handleExport('monthly', 'csv')}
-            onPdfExport={() => handleExport('monthly', 'pdf')}
-            isExporting={isExporting}
-            exportKey="monthly"
-        />
-        <ReportCard
-            title="NSP Registry Export"
-            description="Export the complete NSP registry"
-            onCsvExport={() => handleExport('registry', 'csv')}
-            onPdfExport={() => handleExport('registry', 'pdf')}
-            isExporting={isExporting}
-            exportKey="registry"
-        />
-        <ReportCard
-            title="Submitted NSPs Only"
-            description={`NSPs who have submitted for ${format(selectedDate, 'MMMM yyyy')}`}
-            onCsvExport={() => handleExport('submitted', 'csv')}
-            onPdfExport={() => handleExport('submitted', 'pdf')}
-            isExporting={isExporting}
-            exportKey="submitted"
-        />
-        <ReportCard
-            title="Pending NSPs Only"
-            description={`NSPs yet to submit for ${format(selectedDate, 'MMMM yyyy')}`}
-            onCsvExport={() => handleExport('pending', 'csv')}
-            onPdfExport={() => handleExport('pending', 'pdf')}
-            isExporting={isExporting}
-            exportKey="pending"
-        />
-      </div>
-
+      
       <Card>
         <CardHeader>
-            <CardTitle>Staff Submissions Report</CardTitle>
-            <CardDescription>Submissions for {format(selectedDate, 'MMMM yyyy')}</CardDescription>
+            <CardTitle>Monthly Overview</CardTitle>
+            <CardDescription>{format(selectedDate, 'MMMM yyyy')}</CardDescription>
         </CardHeader>
         <CardContent>
-            {loading ? (
-                <div className="space-y-2">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full" />
-                </div>
-            ) : staffStats.length > 0 ? (
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Staff Member</TableHead>
-                            <TableHead className="text-right">Submissions</TableHead>
-                            <TableHead className="text-right w-32">% of Total</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {staffStats.map(staff => {
-                            const percentage = totalStaffSubmissions > 0 ? (staff.submissionCount / totalStaffSubmissions) * 100 : 0;
-                            return (
-                                <TableRow key={staff.officerName}>
-                                    <TableCell className="font-medium">{staff.officerName}</TableCell>
-                                    <TableCell className="text-right">{staff.submissionCount}</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <span className="w-12 text-sm text-muted-foreground">{percentage.toFixed(1)}%</span>
-                                            <Progress value={percentage} className="h-1.5 w-20"/>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })}
-                    </TableBody>
-                </Table>
-            ) : (
-                <div className="text-center text-muted-foreground py-10">
-                    <p>No staff submissions recorded for this period.</p>
-                </div>
-            )}
+            <div className="grid gap-px grid-cols-2 lg:grid-cols-4 bg-border rounded-lg overflow-hidden">
+                <StatCard title="Active NSPs" value={stats.active} icon={<Users />} loading={loading} />
+                <StatCard title="Submitted" value={stats.submitted} icon={<ClipboardCheck />} loading={loading} />
+                <StatCard title="Pending" value={stats.pending} icon={<Clock />} loading={loading} />
+                <StatCard title="Completion" value={`${Math.round(completionPercentage)}%`} icon={<TrendingUp />} loading={loading} />
+            </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+                <CardTitle>Export Center</CardTitle>
+                <CardDescription>Download reports in CSV or PDF format.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1">
+                <ReportItem
+                    title="Monthly Submission Report"
+                    description={`Complete report for ${format(selectedDate, 'MMMM yyyy')}`}
+                    onCsvExport={() => handleExport('monthly', 'csv')}
+                    onPdfExport={() => handleExport('monthly', 'pdf')}
+                    isExporting={isExporting}
+                    exportKey="monthly"
+                />
+                <ReportItem
+                    title="Submitted NSPs Only"
+                    description={`NSPs who have submitted this month`}
+                    onCsvExport={() => handleExport('submitted', 'csv')}
+                    onPdfExport={() => handleExport('submitted', 'pdf')}
+                    isExporting={isExporting}
+                    exportKey="submitted"
+                />
+                <ReportItem
+                    title="Pending NSPs Only"
+                    description={`NSPs yet to submit this month`}
+                    onCsvExport={() => handleExport('pending', 'csv')}
+                    onPdfExport={() => handleExport('pending', 'pdf')}
+                    isExporting={isExporting}
+                    exportKey="pending"
+                />
+                <ReportItem
+                    title="NSP Registry Export"
+                    description="Export the complete NSP registry"
+                    onCsvExport={() => handleExport('registry', 'csv')}
+                    onPdfExport={() => handleExport('registry', 'pdf')}
+                    isExporting={isExporting}
+                    exportKey="registry"
+                />
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-3">
+            <CardHeader>
+                <CardTitle>Staff Submissions Report</CardTitle>
+                <CardDescription>Submissions recorded for {format(selectedDate, 'MMMM yyyy')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {loading ? (
+                    <div className="space-y-2">
+                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                    </div>
+                ) : staffStats.length > 0 ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Staff Member</TableHead>
+                                <TableHead className="text-right">Submissions</TableHead>
+                                <TableHead className="w-[150px] text-right">% of Total</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {staffStats.map(staff => {
+                                const percentage = totalStaffSubmissions > 0 ? (staff.submissionCount / totalStaffSubmissions) * 100 : 0;
+                                return (
+                                    <TableRow key={staff.officerName}>
+                                        <TableCell className="font-medium">{staff.officerName}</TableCell>
+                                        <TableCell className="text-right font-mono">{staff.submissionCount}</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Progress value={percentage} className="h-2 w-20"/>
+                                                <span className="w-12 text-sm text-muted-foreground font-mono">{percentage.toFixed(1)}%</span>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })}
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <div className="text-center text-muted-foreground py-16">
+                        <FileText className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2"/>
+                        <p className="font-medium">No staff submissions</p>
+                        <p className="text-sm">No submissions were recorded for this period.</p>
+                    </div>
+                )}
+            </CardContent>
+          </Card>
+      </div>
 
     </div>
   );
@@ -305,50 +317,45 @@ function ReportsComponent() {
 
 function StatCard({ title, value, icon, loading }: { title: string, value?: number | string, icon: React.ReactNode, loading: boolean }) {
     return (
-      <Card>
-        <CardContent className="p-4 flex items-center gap-4">
-            <div className="p-3 rounded-full bg-muted">
-                {React.cloneElement(icon as React.ReactElement, { className: "h-5 w-5 text-muted-foreground"})}
-            </div>
-            <div>
-                {loading ? <Skeleton className="h-7 w-12" /> : (
-                  <p className="text-xl font-bold">{value}</p>
-                )}
-                <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            </div>
-        </CardContent>
-      </Card>
+      <div className="bg-card p-4">
+        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">{React.cloneElement(icon as React.ReactElement, { className: "h-3.5 w-3.5"})} {title}</p>
+         {loading ? <Skeleton className="h-7 w-12 mt-1" /> : (
+            <p className="text-2xl font-bold">{value}</p>
+        )}
+      </div>
     )
 }
 
-function ReportCard({ title, description, onCsvExport, onPdfExport, isExporting, exportKey }: { title: string, description: string, onCsvExport: () => void, onPdfExport: () => void, isExporting: string | null, exportKey: string }) {
+function ReportItem({ title, description, onCsvExport, onPdfExport, isExporting, exportKey }: { title: string, description: string, onCsvExport: () => void, onPdfExport: () => void, isExporting: string | null, exportKey: string }) {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-lg">{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex gap-2">
-                <Button 
-                    onClick={onCsvExport} 
-                    disabled={!!isExporting} 
-                    className="flex-1"
-                    variant="primary"
-                >
-                    <FileText className="mr-2 h-4 w-4" />
-                    {isExporting === `${exportKey}-csv` ? 'Exporting...' : 'CSV'}
-                </Button>
-                <Button 
-                    onClick={onPdfExport} 
-                    disabled={!!isExporting} 
-                    className="flex-1"
-                    variant="outline"
-                >
-                    <FileText className="mr-2 h-4 w-4" />
-                    {isExporting === `${exportKey}-pdf` ? 'Exporting...' : 'PDF'}
-                </Button>
-            </CardContent>
-        </Card>
+        <div className="p-2 rounded-md hover:bg-muted/50 transition-colors">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h4 className="font-medium text-sm">{title}</h4>
+                    <p className="text-xs text-muted-foreground">{description}</p>
+                </div>
+                <div className="flex gap-1.5 shrink-0">
+                    <Button 
+                        size="sm"
+                        onClick={onCsvExport} 
+                        disabled={!!isExporting} 
+                        variant="outline"
+                        className="h-8 text-xs"
+                    >
+                        {isExporting === `${exportKey}-csv` ? '...' : 'CSV'}
+                    </Button>
+                    <Button 
+                        size="sm"
+                        onClick={onPdfExport} 
+                        disabled={!!isExporting} 
+                        variant="outline"
+                        className="h-8 text-xs"
+                    >
+                        {isExporting === `${exportKey}-pdf` ? '...' : 'PDF'}
+                    </Button>
+                </div>
+            </div>
+        </div>
     )
 }
 
