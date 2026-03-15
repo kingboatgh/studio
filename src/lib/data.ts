@@ -1,4 +1,4 @@
-import type { NSP, Submission, DashboardStats, SubmissionWithNSP, StaffSubmissionStat } from './definitions';
+import type { NSP, Submission, DashboardStats, SubmissionWithNSP, StaffSubmissionStat, AuditLog } from './definitions';
 import { 
   collection, 
   getDocs, 
@@ -12,6 +12,8 @@ import {
   type Firestore,
   collectionGroup,
   Timestamp,
+  deleteDoc,
+  orderBy,
 } from 'firebase/firestore';
 
 // Assume a default district for now
@@ -304,4 +306,65 @@ export async function getStaffSubmissionStats(db: Firestore, month: number, year
         officerName,
         submissionCount,
     })).sort((a, b) => b.submissionCount - a.submissionCount);
+}
+
+// --- Admin Data Functions ---
+
+export async function createAuditLog(db: Firestore, admin: { uid: string; email?: string | null }, action: string, details: Record<string, any>) {
+  const auditCol = collection(db, 'auditLogs');
+  await addDoc(auditCol, {
+    adminId: admin.uid,
+    adminEmail: admin.email || 'Unknown',
+    action,
+    details,
+    timestamp: serverTimestamp(),
+  });
+}
+
+export async function deleteNspPermanently(db: Firestore, districtId: string, nspId: string, nspName: string, adminUser: {uid: string, email?: string | null}) {
+  if (!adminUser) throw new Error("Admin user is required for this action.");
+
+  const nspDocRef = doc(db, 'districts', districtId, 'personnel', nspId);
+  const submissionsColRef = collection(db, 'districts', districtId, 'personnel', nspId, 'submissions');
+
+  // Delete all submissions in the subcollection
+  const submissionsSnapshot = await getDocs(submissionsColRef);
+  const deletePromises = submissionsSnapshot.docs.map(subDoc => deleteDoc(subDoc.ref));
+  await Promise.all(deletePromises);
+  
+  // Delete the main NSP document
+  await deleteDoc(nspDocRef);
+
+  // Create an audit log
+  await createAuditLog(db, adminUser, 'PERMANENTLY_DELETED_NSP', { nspId, nspName });
+}
+
+export async function fetchAuditLogs(db: Firestore): Promise<AuditLog[]> {
+    const logsCol = collection(db, 'auditLogs');
+    const q = query(logsCol, orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuditLog));
+}
+
+export async function deleteAuditLog(db: Firestore, logId: string) {
+    const logDocRef = doc(db, 'auditLogs', logId);
+    await deleteDoc(logDocRef);
+}
+
+export async function deleteAllPersonnel(db: Firestore, adminUser: {uid: string, email?: string | null}) {
+    if (!adminUser) throw new Error("Admin user is required for this action.");
+    
+    const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
+    const nspsSnapshot = await getDocs(personnelCol);
+
+    for (const nspDoc of nspsSnapshot.docs) {
+        // For each NSP, delete their submissions subcollection, then the NSP doc itself.
+        const submissionsColRef = collection(nspDoc.ref, 'submissions');
+        const submissionsSnapshot = await getDocs(submissionsColRef);
+        const deleteSubmissionsPromises = submissionsSnapshot.docs.map(subDoc => deleteDoc(subDoc.ref));
+        await Promise.all(deleteSubmissionsPromises);
+        await deleteDoc(nspDoc.ref);
+    }
+
+    await createAuditLog(db, adminUser, 'CLEARED_ALL_NSP_RECORDS', { deletedCount: nspsSnapshot.size });
 }

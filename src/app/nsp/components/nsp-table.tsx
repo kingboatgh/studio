@@ -49,7 +49,7 @@ export function NSPTable({ nsps, isAdmin, onRefetch }: { nsps: NSP[], isAdmin: b
                     {isAdmin && (
                       <>
                         <EditNSPButton id={nsp.id} />
-                        <DeleteNSPButton id={nsp.id} onDeleted={onRefetch} />
+                        <DeleteNSPButton id={nsp.id} name={nsp.fullName} onDeleted={onRefetch} />
                       </>
                     )}
                   </div>

@@ -13,9 +13,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useState } from 'react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { updateNSP } from '@/lib/data';
+import { deleteNspPermanently } from '@/lib/data';
 
 export function AddNSPButton() {
   return (
@@ -38,21 +38,25 @@ export function EditNSPButton({ id }: { id: string }) {
     );
   }
 
-export function DeleteNSPButton({ id, onDeleted }: { id: string; onDeleted: () => void }) {
+export function DeleteNSPButton({ id, name, onDeleted }: { id: string; name: string; onDeleted: () => void }) {
   const [isPending, setIsPending] = useState(false);
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
 
   const handleDelete = async () => {
-    if (!firestore) return;
+    if (!firestore || !user) {
+      toast({ variant: 'destructive', title: "Error", description: "You must be logged in as an admin to perform this action." });
+      return;
+    }
     setIsPending(true);
     try {
-      await updateNSP(firestore, id, { isDisabled: true, districtId: 'district1' });
-      toast({ title: "Success", description: "NSP record has been deactivated." });
+      await deleteNspPermanently(firestore, 'district1', id, name, { uid: user.uid, email: user.email });
+      toast({ title: "Success", description: "NSP record has been permanently deleted." });
       onDeleted();
     } catch (error: any) {
       console.error("Deletion failed:", error);
-      toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to deactivate record." });
+      toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to delete record." });
     } finally {
       setIsPending(false);
     }
@@ -67,15 +71,15 @@ export function DeleteNSPButton({ id, onDeleted }: { id: string; onDeleted: () =
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action will mark the NSP record as inactive. It will no longer appear in most lists, but can be reactivated by editing the record.
+            This action is irreversible and will permanently delete the NSP record for <span className="font-bold">{name}</span> and all of their associated submission data. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={isPending}>
-            {isPending ? 'Deactivating...' : 'Deactivate'}
+          <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive hover:bg-destructive/90">
+            {isPending ? 'Deleting...' : 'Yes, permanently delete'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

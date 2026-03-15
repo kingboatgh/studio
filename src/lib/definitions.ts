@@ -54,3 +54,12 @@ export type StaffSubmissionStat = {
     officerName: string;
     submissionCount: number;
 }
+
+export type AuditLog = {
+  id: string;
+  adminId: string;
+  adminEmail: string;
+  action: string;
+  details: Record<string, any>;
+  timestamp: Timestamp;
+};

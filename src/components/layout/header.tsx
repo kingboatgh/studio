@@ -2,7 +2,7 @@
 
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Building, LayoutDashboard, Menu, Upload, Users, LogOut, User as UserProfileIcon, FileCheck, FileBarChart } from 'lucide-react';
+import { Building, LayoutDashboard, Menu, Upload, Users, LogOut, User as UserProfileIcon, FileCheck, FileBarChart, History, ShieldAlert } from 'lucide-react';
 import NavLink from './nav-link';
 import Link from 'next/link';
 import {
@@ -17,12 +17,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { useAdmin } from '@/hooks/useAdmin';
+import { Separator } from '../ui/separator';
 
 const getPageTitle = (pathname: string) => {
     if (pathname === '/') return 'Dashboard';
     if (pathname.startsWith('/profile')) return 'User Profile';
     if (pathname.startsWith('/submissions')) return 'Record Submissions';
     if (pathname.startsWith('/reports')) return 'Reports & Export';
+    if (pathname.startsWith('/audit-logs')) return 'Audit Logs';
+    if (pathname.startsWith('/settings')) return 'Admin Settings';
     if (pathname.startsWith('/nsp/new')) return 'Add New NSP';
     if (pathname.startsWith('/nsp/upload')) return 'Bulk Upload NSP Records';
     if (pathname.startsWith('/nsp') && pathname.includes('/edit')) return 'Edit NSP Record';
@@ -36,6 +40,7 @@ export default function Header() {
   const auth = useAuth();
   const { user } = useUser();
   const router = useRouter();
+  const { isAdmin } = useAdmin();
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -83,6 +88,20 @@ export default function Header() {
                 <Upload className="h-5 w-5" />
                 Bulk Upload
             </NavLink>
+            {isAdmin && (
+                <>
+                    <Separator className="my-2 bg-border/70" />
+                    <p className="px-4 text-sm font-semibold text-muted-foreground/80">Admin</p>
+                    <NavLink href="/audit-logs">
+                        <History className="h-5 w-5" />
+                        Audit Logs
+                    </NavLink>
+                    <NavLink href="/settings">
+                        <ShieldAlert className="h-5 w-5" />
+                        Settings
+                    </NavLink>
+                </>
+            )}
           </nav>
         </SheetContent>
       </Sheet>

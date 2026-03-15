@@ -13,6 +13,12 @@ service cloud.firestore {
       allow write: if false; // Nobody can write to the admins collection directly
     }
 
+    // Audit logs can only be managed by admins
+    match /auditLogs/{logId} {
+      allow read, create, delete: if isAdmin();
+      allow update: if false;
+    }
+
     // This rule is required to allow collection group queries on 'submissions'
     match /{path=**}/submissions/{submissionId} {
       allow read: if request.auth != null;

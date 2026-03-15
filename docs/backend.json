@@ -217,6 +217,47 @@
         "id",
         "name"
       ]
+    },
+    "AuditLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AuditLog",
+      "type": "object",
+      "description": "Represents an audit log entry for critical system actions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the audit log record."
+        },
+        "adminId": {
+          "type": "string",
+          "description": "The UID of the administrator who performed the action."
+        },
+        "adminEmail": {
+          "type": "string",
+          "description": "The email of the administrator."
+        },
+        "action": {
+          "type": "string",
+          "description": "The type of action performed (e.g., 'PERMANENTLY_DELETED_NSP', 'CLEARED_ALL_RECORDS')."
+        },
+        "details": {
+          "type": "object",
+          "description": "An object containing details about the action, e.g., { nspId: '...', nspName: '...' }."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The timestamp of when the action occurred.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "adminId",
+        "adminEmail",
+        "action",
+        "details",
+        "timestamp"
+      ]
     }
   },
   "auth": {
@@ -322,8 +363,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/auditLogs/{logId}",
+        "definition": {
+          "entityName": "AuditLog",
+          "schema": {
+            "$ref": "#/backend/entities/AuditLog"
+          },
+          "description": "Collection to store audit logs for critical administrative actions.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier of the log entry."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the NSP management and submission system. The structure is optimized for the core requirements of NSP record management, monthly submission tracking, and role-based authentication. The use of a top-level `admins` collection provides a simple and secure way to manage admin privileges without relying on custom claims."
+    "reasoning": "The Firestore data structure is designed to support the NSP management and submission system. The structure is optimized for the core requirements of NSP record management, monthly submission tracking, and role-based authentication. The use of a top-level `admins` collection provides a simple and secure way to manage admin privileges without relying on custom claims. The `auditLogs` collection is added to track critical admin actions for security and accountability."
   }
 }
