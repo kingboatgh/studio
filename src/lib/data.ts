@@ -43,10 +43,10 @@ export async function fetchNsps(db: Firestore, options: { queryString?: string; 
   if (queryString) {
     const lowercasedQuery = queryString.toLowerCase();
     filteredNSPs = allNSPs.filter(nsp => 
-      nsp.fullName.toLowerCase().includes(lowercasedQuery) ||
+      (nsp.fullName && nsp.fullName.toLowerCase().includes(lowercasedQuery)) ||
       (nsp.id && nsp.id.toLowerCase().includes(lowercasedQuery)) ||
-      nsp.nssNumber.toLowerCase().includes(lowercasedQuery) ||
-      nsp.email.toLowerCase().includes(lowercasedQuery)
+      (nsp.nssNumber && nsp.nssNumber.toLowerCase().includes(lowercasedQuery)) ||
+      (nsp.email && nsp.email.toLowerCase().includes(lowercasedQuery))
     );
   }
   
