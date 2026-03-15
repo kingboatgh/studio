@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import type { NSP } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { createSubmission } from '@/lib/data';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 
 const months = [
   { value: 1, label: 'January' }, { value: 2, label: 'February' },
@@ -40,6 +40,7 @@ export function SubmitButton({ nsp }: { nsp: NSP }) {
   const [currentYear, setCurrentYear] = useState<number>();
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { user } = useUser();
   // Assume a default district for now
   const DISTRICT_ID = 'district1';
 
@@ -52,17 +53,27 @@ export function SubmitButton({ nsp }: { nsp: NSP }) {
   async function handleSubmission(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsPending(true);
+    
+    if (!user) {
+        toast({
+            variant: 'destructive',
+            title: 'Authentication Error',
+            description: 'You must be logged in to submit.',
+        });
+        setIsPending(false);
+        return;
+    }
 
     const formData = new FormData(event.currentTarget);
     const month = Number(formData.get('month'));
     const year = Number(formData.get('year'));
-    const officerName = String(formData.get('officer'));
+    const officerName = user.email || 'Unknown User';
 
-    if (!month || !year || !officerName) {
+    if (!month || !year) {
       toast({
         variant: 'destructive',
         title: 'Submission Failed',
-        description: 'Month, year, and officer name are required.',
+        description: 'Month and year are required.',
       });
       setIsPending(false);
       return;
@@ -120,10 +131,6 @@ export function SubmitButton({ nsp }: { nsp: NSP }) {
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="year" className="text-right">Year</Label>
               <Input id="year" name="year" defaultValue={currentYear} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="officer" className="text-right">Officer</Label>
-              <Input id="officer" name="officer" defaultValue="Desk Officer" className="col-span-3" />
             </div>
           </div>
           <DialogFooter>
