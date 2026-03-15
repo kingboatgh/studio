@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
@@ -13,7 +14,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useState } from 'react';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { deleteNspPermanently } from '@/lib/data';
 
@@ -55,8 +56,16 @@ export function DeleteNSPButton({ id, name, onDeleted }: { id: string; name: str
       toast({ title: "Success", description: "NSP record has been permanently deleted." });
       onDeleted();
     } catch (error: any) {
-      console.error("Deletion failed:", error);
-      toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to delete record." });
+      if (error.code === 'permission-denied') {
+        const permissionError = new FirestorePermissionError({
+            path: `districts/district1/personnel/${id}`,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      } else {
+        console.error("Deletion failed:", error);
+        toast({ variant: 'destructive', title: "Error", description: error.message || "Failed to delete record." });
+      }
     } finally {
       setIsPending(false);
     }

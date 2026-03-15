@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
 import { deleteAllPersonnel } from '@/lib/data';
@@ -70,7 +70,15 @@ function SettingsContent() {
             toast({ title: 'Success', description: 'All NSP records and their submissions have been deleted.' });
             setConfirmationText(''); // Reset on success
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to clear data.' });
+            if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: 'districts/district1/personnel',
+                    operation: 'delete',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to clear data.' });
+            }
         } finally {
             setIsPending(false);
         }

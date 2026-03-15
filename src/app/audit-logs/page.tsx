@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
 import { fetchAuditLogs, deleteAuditLog } from '@/lib/data';
@@ -85,8 +85,16 @@ function AuditLogsContent() {
             toast({ title: 'Success', description: 'Audit log entry deleted.' });
             getLogs(); // Refetch logs
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete log entry.' });
-            console.error(error);
+            if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: `auditLogs/${logId}`,
+                    operation: 'delete',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete log entry.' });
+                console.error(error);
+            }
         }
     };
 
@@ -140,7 +148,7 @@ function AuditLogsContent() {
     );
 }
 
-function DeleteLogButton({ logId, onDelete }: { logId: string, onDelete: (id: string) => void }) {
+function DeleteLogButton({ logId, onDelete }: { logId: string, onDelete: (id: string) => Promise<void> }) {
     const [isPending, setIsPending] = useState(false);
 
     const handleDelete = async () => {
