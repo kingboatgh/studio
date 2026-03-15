@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Users, Upload, Building, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Upload, Building, LogOut, FileCheck } from 'lucide-react';
 import NavLink from './nav-link';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -33,6 +33,10 @@ export function Sidebar() {
         <NavLink href="/">
           <LayoutDashboard />
           Dashboard
+        </NavLink>
+        <NavLink href="/submissions">
+          <FileCheck />
+          Submissions
         </NavLink>
         <NavLink href="/nsp">
           <Users />

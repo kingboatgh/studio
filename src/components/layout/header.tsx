@@ -2,7 +2,7 @@
 
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Building, LayoutDashboard, Menu, Upload, Users, LogOut, User as UserProfileIcon } from 'lucide-react';
+import { Building, LayoutDashboard, Menu, Upload, Users, LogOut, User as UserProfileIcon, FileCheck } from 'lucide-react';
 import NavLink from './nav-link';
 import Link from 'next/link';
 import {
@@ -21,6 +21,7 @@ import { signOut } from 'firebase/auth';
 const getPageTitle = (pathname: string) => {
     if (pathname === '/') return 'Dashboard';
     if (pathname.startsWith('/profile')) return 'User Profile';
+    if (pathname.startsWith('/submissions')) return 'All Submissions';
     if (pathname.startsWith('/nsp/new')) return 'Add New NSP';
     if (pathname.startsWith('/nsp/upload')) return 'Bulk Upload NSP Records';
     if (pathname.startsWith('/nsp') && pathname.includes('/edit')) return 'Edit NSP Record';
@@ -62,6 +63,10 @@ export default function Header() {
             <NavLink href="/">
                 <LayoutDashboard className="h-5 w-5" />
                 Dashboard
+            </NavLink>
+            <NavLink href="/submissions">
+                <FileCheck className="h-5 w-5" />
+                Submissions
             </NavLink>
             <NavLink href="/nsp">
                 <Users className="h-5 w-5" />
