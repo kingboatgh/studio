@@ -3,17 +3,26 @@
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore } from '@/firebase';
 import { isUserAdmin } from '@/lib/data';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShieldCheck, User as UserIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { updateProfile } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loadingRole, setLoadingRole] = useState(true);
+
+  const [displayName, setDisplayName] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     async function checkAdminStatus() {
@@ -29,6 +38,36 @@ export default function ProfilePage() {
     checkAdminStatus();
   }, [user, firestore, isUserLoading]);
 
+  useEffect(() => {
+    if (user?.displayName) {
+      setDisplayName(user.displayName);
+    } else if(user?.email) {
+      setDisplayName('');
+    }
+  }, [user]);
+
+  const handleProfileUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user) return;
+
+    setIsUpdating(true);
+    try {
+      await updateProfile(user, { displayName });
+      toast({
+        title: 'Profile Updated',
+        description: 'Your name has been updated successfully.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: error.message,
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const role = isAdmin ? 'Administrator' : 'Desk Officer';
 
   if (isUserLoading || loadingRole) {
@@ -41,11 +80,18 @@ export default function ProfilePage() {
             <Skeleton className="h-4 w-56 mt-2" />
           </CardHeader>
           <CardContent className="space-y-4">
+             <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-10 w-full" />
+            </div>
             <div className="flex items-center justify-between rounded-lg border p-4">
               <Skeleton className="h-5 w-20" />
               <Skeleton className="h-6 w-32" />
             </div>
           </CardContent>
+          <CardFooter>
+            <Skeleton className="h-10 w-24 ml-auto" />
+          </CardFooter>
         </Card>
       </div>
     );
@@ -57,30 +103,46 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <Card>
-        <CardHeader className="items-center text-center">
-          <Avatar className="h-24 w-24 mb-4">
-            <AvatarImage src={user.photoURL ?? ''} alt={user.email ?? 'User'} />
-            <AvatarFallback className="text-3xl">
-              {user.email?.charAt(0).toUpperCase() ?? 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <CardTitle className="text-2xl">{user.displayName || user.email}</CardTitle>
-          <CardDescription>{user.email}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <UserIcon className="h-4 w-4 text-muted-foreground" />
-              <span>Role</span>
+       <form onSubmit={handleProfileUpdate}>
+        <Card>
+          <CardHeader className="items-center text-center">
+            <Avatar className="h-24 w-24 mb-4">
+              <AvatarImage src={user.photoURL ?? ''} alt={user.email ?? 'User'} />
+              <AvatarFallback className="text-3xl">
+                {user.email?.charAt(0).toUpperCase() ?? 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <CardTitle className="text-2xl">{displayName || user.email}</CardTitle>
+            <CardDescription>{user.email}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="displayName">Full Name</Label>
+              <Input
+                id="displayName"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Your full name"
+              />
             </div>
-            <Badge variant={isAdmin ? 'default' : 'secondary'} className="gap-1 pl-2">
-                {isAdmin ? <ShieldCheck className="h-3.5 w-3.5" /> : null}
-                {role}
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <UserIcon className="h-4 w-4 text-muted-foreground" />
+                <span>Role</span>
+              </div>
+              <Badge variant={isAdmin ? 'default' : 'secondary'} className="gap-1 pl-2">
+                  {isAdmin ? <ShieldCheck className="h-3.5 w-3.5" /> : null}
+                  {role}
+              </Badge>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button type="submit" disabled={isUpdating}>
+              {isUpdating ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </form>
     </div>
   );
 }

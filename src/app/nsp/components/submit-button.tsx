@@ -68,7 +68,7 @@ export function SubmitButton({ nsp, onSubmissionSuccess }: { nsp: NSP, onSubmiss
     const formData = new FormData(event.currentTarget);
     const month = Number(formData.get('month'));
     const year = Number(formData.get('year'));
-    const officerName = user.email || 'Unknown User';
+    const officerName = user.displayName || user.email || 'Unknown User';
 
     if (!month || !year) {
       toast({
