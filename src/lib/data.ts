@@ -196,3 +196,10 @@ export async function fetchSubmissionsForMonth(db: Firestore, month: number, yea
 
   return enrichedSubmissions;
 }
+
+export async function isUserAdmin(db: Firestore, userId: string): Promise<boolean> {
+  if (!userId) return false;
+  const adminDocRef = doc(db, 'admins', userId);
+  const adminDocSnap = await getDoc(adminDocRef);
+  return adminDocSnap.exists();
+}

@@ -2,7 +2,7 @@
 
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Building, LayoutDashboard, Menu, Upload, Users, LogOut } from 'lucide-react';
+import { Building, LayoutDashboard, Menu, Upload, Users, LogOut, User as UserProfileIcon } from 'lucide-react';
 import NavLink from './nav-link';
 import Link from 'next/link';
 import {
@@ -20,6 +20,7 @@ import { signOut } from 'firebase/auth';
 
 const getPageTitle = (pathname: string) => {
     if (pathname === '/') return 'Dashboard';
+    if (pathname.startsWith('/profile')) return 'User Profile';
     if (pathname.startsWith('/nsp/new')) return 'Add New NSP';
     if (pathname.startsWith('/nsp/upload')) return 'Bulk Upload NSP Records';
     if (pathname.startsWith('/nsp') && pathname.includes('/edit')) return 'Edit NSP Record';
@@ -88,6 +89,12 @@ export default function Header() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/profile">
+                <UserProfileIcon className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Logout</span>
