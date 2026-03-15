@@ -7,6 +7,14 @@ import { FirebaseClientProvider, useUser } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Poppins as FontSans } from 'next/font/google';
+import { cn } from '@/lib/utils';
+
+const fontSans = FontSans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-sans',
+});
 
 export default function RootLayout({
   children,
@@ -19,7 +27,7 @@ export default function RootLayout({
         <title>NSP Digital Submissions</title>
         <meta name="description" content="NSP Management and Monthly Submission System" />
       </head>
-      <body className="antialiased">
+      <body className={cn('antialiased font-sans', fontSans.variable)}>
         <FirebaseClientProvider>
             <AuthGuard>
               <div className="flex min-h-screen w-full bg-secondary">

@@ -177,7 +177,7 @@ function ReportsComponent() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports & Export</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Reports & Export</h1>
         <p className="text-muted-foreground mt-1">
           Generate and download reports for submission tracking
         </p>
@@ -312,7 +312,7 @@ function StatCard({ title, value, icon, loading }: { title: string, value?: numb
             </div>
             <div>
                 {loading ? <Skeleton className="h-7 w-12" /> : (
-                  <p className="text-2xl font-bold">{value}</p>
+                  <p className="text-xl font-bold">{value}</p>
                 )}
                 <p className="text-sm font-medium text-muted-foreground">{title}</p>
             </div>

@@ -103,7 +103,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-       <h1 className="text-3xl font-bold tracking-tight">User Profile</h1>
+       <h1 className="text-2xl font-bold tracking-tight">User Profile</h1>
        <form onSubmit={handleProfileUpdate}>
         <Card>
           <CardHeader className="items-center text-center border-b p-8">
@@ -113,7 +113,7 @@ export default function ProfilePage() {
                 {user.email?.charAt(0).toUpperCase() ?? 'U'}
               </AvatarFallback>
             </Avatar>
-            <CardTitle className="text-2xl">{displayName || user.email}</CardTitle>
+            <CardTitle className="text-xl">{displayName || user.email}</CardTitle>
             <CardDescription>{user.email}</CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-6">

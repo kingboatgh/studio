@@ -45,7 +45,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
           An overview of NSP submissions for {format(new Date(), 'MMMM yyyy')}.
         </p>
@@ -113,7 +113,7 @@ function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: st
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
           {loading ? <Skeleton className="h-8 w-16 mt-1" /> : (
-            <p className="text-3xl font-bold">{value?.toLocaleString() ?? 0}</p>
+            <p className="text-2xl font-bold">{value?.toLocaleString() ?? 0}</p>
           )}
         </div>
         <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", colors.bg)}>
