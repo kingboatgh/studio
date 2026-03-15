@@ -21,7 +21,7 @@ import { signOut } from 'firebase/auth';
 const getPageTitle = (pathname: string) => {
     if (pathname === '/') return 'Dashboard';
     if (pathname.startsWith('/profile')) return 'User Profile';
-    if (pathname.startsWith('/submissions')) return 'All Submissions';
+    if (pathname.startsWith('/submissions')) return 'Monthly Submissions';
     if (pathname.startsWith('/nsp/new')) return 'Add New NSP';
     if (pathname.startsWith('/nsp/upload')) return 'Bulk Upload NSP Records';
     if (pathname.startsWith('/nsp') && pathname.includes('/edit')) return 'Edit NSP Record';

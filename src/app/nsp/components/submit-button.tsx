@@ -23,6 +23,7 @@ import type { NSP } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { createSubmission } from '@/lib/data';
 import { useFirestore, useUser } from '@/firebase';
+import { CheckCircle } from 'lucide-react';
 
 const months = [
   { value: 1, label: 'January' }, { value: 2, label: 'February' },
@@ -33,7 +34,7 @@ const months = [
   { value: 11, label: 'November' }, { value: 12, label: 'December' },
 ];
 
-export function SubmitButton({ nsp }: { nsp: NSP }) {
+export function SubmitButton({ nsp, onSubmissionSuccess }: { nsp: NSP, onSubmissionSuccess?: () => void }) {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<number>();
@@ -85,6 +86,7 @@ export function SubmitButton({ nsp }: { nsp: NSP }) {
         title: 'Submission Successful',
         description: `${nsp.fullName}'s submission for ${months.find(m => m.value === month)?.label} ${year} has been recorded.`,
       });
+      onSubmissionSuccess?.();
       setOpen(false);
     } catch (error: any) {
       toast({
@@ -97,6 +99,15 @@ export function SubmitButton({ nsp }: { nsp: NSP }) {
     }
   }
 
+  if (nsp.hasSubmittedThisMonth) {
+    return (
+        <Button size="sm" disabled variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Submitted
+        </Button>
+    );
+  }
+
   if (currentMonth === undefined || currentYear === undefined) {
     return <Button size="sm" disabled>Submit</Button>;
   }
@@ -104,7 +115,10 @@ export function SubmitButton({ nsp }: { nsp: NSP }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="default">Submit</Button>
+        <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700 text-white">
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Submit
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

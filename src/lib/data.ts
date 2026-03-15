@@ -18,20 +18,18 @@ import {
 // Assume a default district for now
 const DISTRICT_ID = 'district1';
 
-export async function fetchNsps(db: Firestore, queryString?: string, page: number = 1): Promise<{nsps: NSP[], total: number}> {
+export async function fetchNsps(db: Firestore, options: { queryString?: string; page?: number; month: number; year: number }): Promise<{nsps: NSP[], total: number}> {
+  const { queryString, month, year } = options;
   const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
   // 1. Fetch all NSPs
-  const querySnapshot = await getDocs(personnelCol);
+  const querySnapshot = await getDocs(query(personnelCol, where('isDisabled', '==', false)));
   let allNSPs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
   
-  // 2. Enrich NSP data with submission status for the current month
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-  
+  // 2. Enrich NSP data with submission status for the selected month
   const enrichedNSPs = await Promise.all(
     allNSPs.map(async (nsp) => {
-      const submissionId = `${currentYear}-${currentMonth}`;
+      const submissionId = `${year}-${month}`;
       const subDocRef = doc(db, `districts/${DISTRICT_ID}/personnel/${nsp.id}/submissions`, submissionId);
       const subDocSnap = await getDoc(subDocRef);
       return {
@@ -196,6 +194,29 @@ export async function fetchSubmissionsForMonth(db: Firestore, month: number, yea
 
   return enrichedSubmissions;
 }
+
+export async function getMonthlySubmissionStats(db: Firestore, month: number, year: number): Promise<{ submitted: number, pending: number, total: number }> {
+    const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
+    const personnelSnapshot = await getDocs(query(personnelCol, where('isDisabled', '==', false)));
+    const totalNsps = personnelSnapshot.size;
+    
+    let submittedCount = 0;
+    for (const nspDoc of personnelSnapshot.docs) {
+        const submissionId = `${year}-${month}`;
+        const subDocRef = doc(db, `districts/${DISTRICT_ID}/personnel/${nspDoc.id}/submissions`, submissionId);
+        const subDocSnap = await getDoc(subDocRef);
+        if (subDocSnap.exists()) {
+            submittedCount++;
+        }
+    }
+    
+    return {
+        submitted: submittedCount,
+        pending: totalNsps - submittedCount,
+        total: totalNsps,
+    };
+}
+
 
 export async function isUserAdmin(db: Firestore, userId: string): Promise<boolean> {
   if (!userId) return false;

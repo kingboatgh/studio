@@ -38,11 +38,19 @@ function NSPList({query, currentPage}: {query: string, currentPage: number}) {
   useEffect(() => {
     async function getNsps() {
         setLoading(true);
-        const result = await fetchNsps(firestore, query, currentPage);
+        const date = new Date();
+        const result = await fetchNsps(firestore, { 
+          queryString: query, 
+          page: currentPage, 
+          month: date.getMonth() + 1,
+          year: date.getFullYear()
+        });
         setData(result);
         setLoading(false);
     }
-    getNsps();
+    if (firestore) {
+      getNsps();
+    }
   }, [query, currentPage, firestore]);
 
 
