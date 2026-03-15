@@ -3,12 +3,13 @@ import { fetchNsps } from "@/lib/data";
 import { NSPTable } from "./components/nsp-table";
 import { AddNSPButton } from "./components/buttons";
 import Search from "./components/search";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { NSP } from "@/lib/definitions";
 import { useSearchParams } from "next/navigation";
 import { useFirestore } from "@/firebase";
+import { useAdmin } from "@/hooks/useAdmin";
 
 export default function NspRegistryPage() {
   const searchParams = useSearchParams();
@@ -34,31 +35,34 @@ function NSPList({query, currentPage}: {query: string, currentPage: number}) {
   const [data, setData] = useState<{nsps: NSP[], total: number} | null>(null);
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
+  const { isAdmin, isAdminLoading } = useAdmin();
+  const [key, setKey] = useState(0); // Used to trigger a re-fetch
+
+  const getNsps = useCallback(async () => {
+    if (!firestore) return;
+    setLoading(true);
+    const result = await fetchNsps(firestore, { 
+      queryString: query, 
+      page: currentPage,
+    });
+    setData(result);
+    setLoading(false);
+  }, [firestore, query, currentPage]);
 
   useEffect(() => {
-    async function getNsps() {
-        setLoading(true);
-        const date = new Date();
-        const result = await fetchNsps(firestore, { 
-          queryString: query, 
-          page: currentPage, 
-          month: date.getMonth() + 1,
-          year: date.getFullYear()
-        });
-        setData(result);
-        setLoading(false);
-    }
-    if (firestore) {
-      getNsps();
-    }
-  }, [query, currentPage, firestore]);
+    getNsps();
+  }, [getNsps, key]);
+
+  const handleRefetch = () => {
+    setKey(prev => prev + 1);
+  };
 
 
-  if (loading) {
+  if (loading || isAdminLoading) {
     return <TableSkeleton />;
   }
 
-  return <NSPTable nsps={data?.nsps ?? []} />;
+  return <NSPTable nsps={data?.nsps ?? []} isAdmin={isAdmin} onRefetch={handleRefetch} />;
 }
 
 function TableSkeleton() {

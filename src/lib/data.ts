@@ -17,44 +17,52 @@ import {
 // Assume a default district for now
 const DISTRICT_ID = 'district1';
 
-export async function fetchNsps(db: Firestore, options: { queryString?: string; page?: number; month: number; year: number }): Promise<{nsps: NSP[], total: number}> {
+export async function fetchNsps(db: Firestore, options: { queryString?: string; page?: number; month?: number; year?: number }): Promise<{nsps: NSP[], total: number}> {
   const { queryString, month, year } = options;
   const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
-  // 1. Fetch all active NSPs in one go.
-  const nspQuery = query(personnelCol, where('isDisabled', '==', false));
+  // Fetch all personnel. We will filter client-side for simplicity in this function.
+  // For a larger dataset, server-side filtering would be better.
+  const nspSnapshot = await getDocs(personnelCol);
+  let allNSPs = nspSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
+
+  // If month and year are provided, enrich with submission status.
+  if (month && year) {
+    const submissionsQuery = query(collectionGroup(db, 'submissions'), 
+      where('month', '==', month),
+      where('year', '==', year)
+    );
+    const submissionsSnapshot = await getDocs(submissionsQuery);
+    const submittedNspIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().nspId));
+    
+    allNSPs = allNSPs.map(nsp => ({
+      ...nsp,
+      hasSubmittedThisMonth: submittedNspIds.has(nsp.id),
+    }));
+  }
   
-  // 2. Fetch all submissions for the given month/year in one go.
-  const submissionsQuery = query(collectionGroup(db, 'submissions'), 
-    where('month', '==', month),
-    where('year', '==', year)
-  );
+  let filteredNSPs = allNSPs;
 
-  const [nspSnapshot, submissionsSnapshot] = await Promise.all([
-    getDocs(nspQuery),
-    getDocs(submissionsQuery)
-  ]);
-
-  const allNSPs = nspSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
-  const submittedNspIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().nspId));
-
-  // 3. Enrich NSP data with submission status on the client (much faster than N+1 queries).
-  const enrichedNSPs = allNSPs.map(nsp => ({
-    ...nsp,
-    hasSubmittedThisMonth: submittedNspIds.has(nsp.id),
-  }));
-  
-  let filteredNSPs = enrichedNSPs;
-
-  // 4. Filter if a search query is provided (client-side filtering remains for flexibility).
+  // Filter if a search query is provided.
   if (queryString) {
     const lowercasedQuery = queryString.toLowerCase();
-    filteredNSPs = enrichedNSPs.filter(nsp => 
+    filteredNSPs = allNSPs.filter(nsp => 
       nsp.fullName.toLowerCase().includes(lowercasedQuery) ||
       (nsp.id && nsp.id.toLowerCase().includes(lowercasedQuery)) ||
       nsp.serviceNumber.toLowerCase().includes(lowercasedQuery)
     );
   }
+  
+  // For the main registry view (no month/year), we show all users (active/inactive)
+  // And sort them. For other views, we probably only want active ones.
+  if (!month && !year) {
+    // Show all, sort active first.
+    filteredNSPs.sort((a, b) => (a.isDisabled === b.isDisabled) ? 0 : a.isDisabled ? 1 : -1);
+  } else {
+    // For views with submission status, only show active personnel
+    filteredNSPs = filteredNSPs.filter(nsp => !nsp.isDisabled);
+  }
+
 
   return { nsps: filteredNSPs, total: filteredNSPs.length };
 }
