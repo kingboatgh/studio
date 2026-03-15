@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getDashboardStats } from "@/lib/data";
-import { Users, User, ClipboardCheck, Clock, ArrowRight, TrendingUp } from "lucide-react";
+import { Users, User, ClipboardCheck, Clock, ArrowRight, TrendingUp, FileBarChart, FileCheck } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore } from '@/firebase';
 import type { DashboardStats } from '@/lib/definitions';
@@ -51,22 +51,23 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total NSPs" value={stats?.totalNsps} icon={<Users />} loading={loading} variant="blue" />
         <StatCard title="Active NSPs" value={stats?.activeNsps} icon={<User />} loading={loading} variant="sky" />
         <StatCard title="Submitted" value={stats?.submittedThisMonth} icon={<ClipboardCheck />} loading={loading} variant="green" />
         <StatCard title="Pending" value={stats?.pendingThisMonth} icon={<Clock />} loading={loading} variant="orange" />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Key actions at your fingertips.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3">
-            <ActionButton href="/submissions" isPrimary>Record Submission</ActionButton>
-            <ActionButton href="/nsp/new">Add New NSP</ActionButton>
-            <ActionButton href="/submissions">View Reports</ActionButton>
+          <CardContent className="grid gap-2">
+            <ActionButton href="/reports" icon={<FileBarChart/>} isPrimary>View Reports</ActionButton>
+            <ActionButton href="/submissions" icon={<FileCheck/>}>Record Submission</ActionButton>
+            <ActionButton href="/nsp/new" icon={<Users/>}>Add New NSP</ActionButton>
           </CardContent>
         </Card>
 
@@ -76,8 +77,9 @@ export default function DashboardPage() {
               <CardTitle>Monthly Progress</CardTitle>
               {loading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold text-primary">{Math.round(submissionPercentage)}%</p>}
             </div>
+             <CardDescription>Submission completion for the current month.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
              {loading ? <Skeleton className="h-2 w-full" /> : <Progress value={submissionPercentage} className="h-2" />}
              <div className="flex justify-between text-sm text-muted-foreground">
                 {loading ? <Skeleton className="h-5 w-24" /> : <span>{stats?.submittedThisMonth} submitted</span>}
@@ -97,40 +99,43 @@ export default function DashboardPage() {
 }
 
 const statCardVariants = {
-  blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
-  sky: { bg: 'bg-sky-100', text: 'text-sky-600' },
-  green: { bg: 'bg-green-100', text: 'text-green-600' },
-  orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
+  blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
+  sky: { bg: 'bg-sky-50', text: 'text-sky-600' },
+  green: { bg: 'bg-green-50', text: 'text-green-600' },
+  orange: { bg: 'bg-orange-50', text: 'text-orange-600' },
 }
 
 function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: string, value?: number, icon: React.ReactNode, loading: boolean, variant?: keyof typeof statCardVariants }) {
   const colors = statCardVariants[variant];
   return (
     <Card>
-      <CardContent className="p-6 flex items-center justify-between">
+      <CardContent className="p-4 flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          {loading ? <Skeleton className="h-9 w-16 mt-1" /> : (
+          {loading ? <Skeleton className="h-8 w-16 mt-1" /> : (
             <p className="text-3xl font-bold">{value?.toLocaleString() ?? 0}</p>
           )}
         </div>
-        <div className={cn("h-12 w-12 rounded-lg flex items-center justify-center", colors.bg)}>
-          {React.cloneElement(icon as React.ReactElement, { className: cn("h-6 w-6", colors.text)})}
+        <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", colors.bg)}>
+          {React.cloneElement(icon as React.ReactElement, { className: cn("h-5 w-5", colors.text)})}
         </div>
       </CardContent>
     </Card>
   )
 }
 
-function ActionButton({ href, children, isPrimary = false }: { href: string, children: React.ReactNode, isPrimary?: boolean }) {
+function ActionButton({ href, icon, children, isPrimary = false }: { href: string, icon: React.ReactNode, children: React.ReactNode, isPrimary?: boolean }) {
   return (
-    <Link href={href}>
+    <Link href={href} className="block">
       <Button
         variant={isPrimary ? "default" : "outline"}
-        className="w-full justify-between"
+        className="w-full justify-start h-11 px-4"
       >
-        {children}
-        <ArrowRight className="h-4 w-4" />
+        <div className="flex items-center gap-3">
+          {icon}
+          {children}
+        </div>
+        <ArrowRight className="h-4 w-4 ml-auto" />
       </Button>
     </Link>
   );

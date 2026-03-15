@@ -49,3 +49,8 @@ export type DashboardStats = {
   submittedThisMonth: number;
   pendingThisMonth: number;
 };
+
+export type StaffSubmissionStat = {
+    officerName: string;
+    submissionCount: number;
+}

@@ -2,7 +2,7 @@
 
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Building, LayoutDashboard, Menu, Upload, Users, LogOut, User as UserProfileIcon, FileCheck } from 'lucide-react';
+import { Building, LayoutDashboard, Menu, Upload, Users, LogOut, User as UserProfileIcon, FileCheck, FileBarChart } from 'lucide-react';
 import NavLink from './nav-link';
 import Link from 'next/link';
 import {
@@ -21,7 +21,8 @@ import { signOut } from 'firebase/auth';
 const getPageTitle = (pathname: string) => {
     if (pathname === '/') return 'Dashboard';
     if (pathname.startsWith('/profile')) return 'User Profile';
-    if (pathname.startsWith('/submissions')) return 'Monthly Submissions';
+    if (pathname.startsWith('/submissions')) return 'Record Submissions';
+    if (pathname.startsWith('/reports')) return 'Reports & Export';
     if (pathname.startsWith('/nsp/new')) return 'Add New NSP';
     if (pathname.startsWith('/nsp/upload')) return 'Bulk Upload NSP Records';
     if (pathname.startsWith('/nsp') && pathname.includes('/edit')) return 'Edit NSP Record';
@@ -46,21 +47,21 @@ export default function Header() {
   }
 
   return (
-    <header className="flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 sticky top-0 z-30">
+    <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 sticky top-0 z-30">
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-            <Menu className="h-5 w-5" />
+          <Button variant="outline" size="icon" className="shrink-0 md:hidden h-8 w-8">
+            <Menu className="h-4 w-4" />
             <span className="sr-only">Toggle navigation menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="bg-secondary">
-          <nav className="grid gap-6 text-lg font-medium p-6">
-            <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary">
-              <div className="bg-primary p-2 rounded-lg">
-                <Building className="h-6 w-6 text-primary-foreground" />
+        <SheetContent side="left" className="bg-secondary p-4">
+          <nav className="grid gap-2 text-lg font-medium">
+            <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary mb-4 px-2">
+              <div className="bg-primary p-2.5 rounded-lg">
+                <Building className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-foreground">NSP Digital</span>
+              <span className="text-foreground text-lg">NSP Digital</span>
             </Link>
             <NavLink href="/">
                 <LayoutDashboard className="h-5 w-5" />
@@ -68,7 +69,11 @@ export default function Header() {
             </NavLink>
             <NavLink href="/submissions">
                 <FileCheck className="h-5 w-5" />
-                Submissions
+                Record Submissions
+            </NavLink>
+            <NavLink href="/reports">
+                <FileBarChart className="h-5 w-5" />
+                Reports
             </NavLink>
             <NavLink href="/nsp">
                 <Users className="h-5 w-5" />
@@ -84,9 +89,9 @@ export default function Header() {
       <div className="flex w-full items-center justify-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="icon" className="rounded-full">
-              <Avatar>
-                <AvatarImage src={user.photoURL ?? "https://i.pravatar.cc/150"} alt="User" />
+            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user.photoURL ?? ""} alt="User" />
                 <AvatarFallback>{user.email?.charAt(0).toUpperCase() ?? 'A'}</AvatarFallback>
               </Avatar>
               <span className="sr-only">Toggle user menu</span>

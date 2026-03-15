@@ -1,4 +1,4 @@
-import type { NSP, Submission, DashboardStats, SubmissionWithNSP } from './definitions';
+import type { NSP, Submission, DashboardStats, SubmissionWithNSP, StaffSubmissionStat } from './definitions';
 import { 
   collection, 
   getDocs, 
@@ -51,11 +51,12 @@ export async function fetchNsps(db: Firestore, options: { queryString?: string; 
   }
   
   if (!month && !year) {
+    // Default sort for registry page: inactive last
     filteredNSPs.sort((a, b) => (a.isDisabled === b.isDisabled) ? 0 : a.isDisabled ? 1 : -1);
   } else {
+    // For submission/report views, only show active personnel
     filteredNSPs = filteredNSPs.filter(nsp => !nsp.isDisabled);
   }
-
 
   return { nsps: filteredNSPs, total: filteredNSPs.length };
 }
@@ -218,7 +219,7 @@ export async function fetchSubmissionsForMonth(db: Firestore, month: number, yea
 }
 
 
-export async function getMonthlySubmissionStats(db: Firestore, month: number, year: number): Promise<{ submitted: number, pending: number, total: number }> {
+export async function getReportStats(db: Firestore, month: number, year: number): Promise<{ active: number, submitted: number, pending: number }> {
     const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
     
     const activePersonnelQuery = getDocs(query(personnelCol, where('isDisabled', '==', false)));
@@ -237,9 +238,9 @@ export async function getMonthlySubmissionStats(db: Firestore, month: number, ye
     const submittedCount = submissionsSnapshot.size;
     
     return {
+        active: totalActive,
         submitted: submittedCount,
         pending: totalActive - submittedCount,
-        total: totalActive,
     };
 }
 
@@ -249,4 +250,58 @@ export async function isUserAdmin(db: Firestore, userId: string): Promise<boolea
   const adminDocRef = doc(db, 'admins', userId);
   const adminDocSnap = await getDoc(adminDocRef);
   return adminDocSnap.exists();
+}
+
+export async function exportNspRegistry(db: Firestore): Promise<NSP[]> {
+    const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
+    const snapshot = await getDocs(personnelCol);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
+}
+
+export async function exportSubmittedOrPending(db: Firestore, month: number, year: number, submitted: boolean | undefined): Promise<NSP[]> {
+    const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
+    const activePersonnelQuery = query(personnelCol, where('isDisabled', '==', false));
+    const nspsSnap = await getDocs(activePersonnelQuery);
+    const activeNsps = nspsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as NSP));
+
+    const submissionsQuery = query(collectionGroup(db, 'submissions'), 
+      where('month', '==', month),
+      where('year', '==', year)
+    );
+    const submissionsSnapshot = await getDocs(submissionsQuery);
+    const submittedNspIds = new Set(submissionsSnapshot.docs.map(doc => doc.data().nspId));
+    
+    if (submitted === undefined) { // For monthly report, return all with status
+        return activeNsps.map(nsp => ({
+            ...nsp,
+            hasSubmittedThisMonth: submittedNspIds.has(nsp.id),
+        }));
+    }
+
+    if (submitted) {
+        return activeNsps.filter(nsp => submittedNspIds.has(nsp.id));
+    } else {
+        return activeNsps.filter(nsp => !submittedNspIds.has(nsp.id));
+    }
+}
+
+export async function getStaffSubmissionStats(db: Firestore, month: number, year: number): Promise<StaffSubmissionStat[]> {
+    const submissionsQuery = query(collectionGroup(db, 'submissions'),
+        where('month', '==', month),
+        where('year', '==', year)
+    );
+    const submissionsSnapshot = await getDocs(submissionsQuery);
+    
+    const statsMap = new Map<string, number>();
+
+    submissionsSnapshot.docs.forEach(doc => {
+        const data = doc.data() as Submission;
+        const officerName = data.deskOfficerName || 'Unknown';
+        statsMap.set(officerName, (statsMap.get(officerName) || 0) + 1);
+    });
+
+    return Array.from(statsMap, ([officerName, submissionCount]) => ({
+        officerName,
+        submissionCount,
+    })).sort((a, b) => b.submissionCount - a.submissionCount);
 }
