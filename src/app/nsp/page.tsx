@@ -4,12 +4,20 @@ import { NSPTable } from "./components/nsp-table";
 import { AddNSPButton } from "./components/buttons";
 import Search from "./components/search";
 import { Suspense, useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { NSP } from "@/lib/definitions";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { useFirestore } from "@/firebase";
 import { useAdmin } from "@/hooks/useAdmin";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis
+} from "@/components/ui/pagination";
 
 export default function NspRegistryPage() {
   const searchParams = useSearchParams();
@@ -18,12 +26,12 @@ export default function NspRegistryPage() {
   
   return (
     <div className="space-y-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">NSP Registry</h1>
+            <h1 className="text-xl font-bold tracking-tight">NSP Registry</h1>
             <p className="text-muted-foreground">Manage all personnel records.</p>
           </div>
-          <div className="flex w-full md:w-auto items-center gap-2">
+          <div className="flex w-full items-center gap-2 md:w-auto">
             <Search placeholder="Search by Name, ID, NSS No, Email..." />
             <AddNSPButton />
           </div>
@@ -36,7 +44,7 @@ export default function NspRegistryPage() {
 }
 
 function NSPList({query, currentPage}: {query: string, currentPage: number}) {
-  const [data, setData] = useState<{nsps: NSP[], total: number} | null>(null);
+  const [data, setData] = useState<{nsps: NSP[], totalPages: number} | null>(null);
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
   const { isAdmin, isAdminLoading } = useAdmin();
@@ -66,8 +74,99 @@ function NSPList({query, currentPage}: {query: string, currentPage: number}) {
     return <TableSkeleton />;
   }
 
-  return <NSPTable nsps={data?.nsps ?? []} isAdmin={isAdmin} onRefetch={handleRefetch} />;
+  return (
+    <div className="space-y-4">
+        <NSPTable nsps={data?.nsps ?? []} isAdmin={isAdmin} onRefetch={handleRefetch} />
+        {data && data.totalPages > 1 && (
+            <PaginationControls currentPage={currentPage} totalPages={data.totalPages} />
+        )}
+    </div>
+  );
 }
+
+function PaginationControls({ currentPage, totalPages }: { currentPage: number; totalPages: number }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const createPageURL = (pageNumber: number | string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', pageNumber.toString());
+    return `${pathname}?${params.toString()}`;
+  };
+
+  const pageNumbers = [];
+  const MAX_PAGES_SHOWN = 5;
+
+  if (totalPages <= MAX_PAGES_SHOWN) {
+      for (let i = 1; i <= totalPages; i++) {
+          pageNumbers.push(i);
+      }
+  } else {
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, currentPage + 2);
+
+      if (currentPage <= 3) {
+          startPage = 1;
+          endPage = MAX_PAGES_SHOWN;
+      } else if (currentPage >= totalPages - 2) {
+          startPage = totalPages - MAX_PAGES_SHOWN + 1;
+          endPage = totalPages;
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+          pageNumbers.push(i);
+      }
+  }
+
+  return (
+      <Pagination>
+          <PaginationContent>
+              <PaginationItem>
+                  <PaginationPrevious 
+                      href={createPageURL(currentPage - 1)} 
+                      aria-disabled={currentPage <= 1}
+                      className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+              </PaginationItem>
+
+              {pageNumbers[0] > 1 && (
+                  <>
+                      <PaginationItem>
+                          <PaginationLink href={createPageURL(1)}>1</PaginationLink>
+                      </PaginationItem>
+                      {pageNumbers[0] > 2 && <PaginationEllipsis />}
+                  </>
+              )}
+
+              {pageNumbers.map(page => (
+                  <PaginationItem key={page}>
+                      <PaginationLink href={createPageURL(page)} isActive={currentPage === page}>
+                          {page}
+                      </PaginationLink>
+                  </PaginationItem>
+              ))}
+              
+              {pageNumbers[pageNumbers.length - 1] < totalPages && (
+                  <>
+                       {pageNumbers[pageNumbers.length - 1] < totalPages -1 && <PaginationEllipsis />}
+                      <PaginationItem>
+                          <PaginationLink href={createPageURL(totalPages)}>{totalPages}</PaginationLink>
+                      </PaginationItem>
+                  </>
+              )}
+
+              <PaginationItem>
+                  <PaginationNext 
+                      href={createPageURL(currentPage + 1)} 
+                      aria-disabled={currentPage >= totalPages}
+                      className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
+              </PaginationItem>
+          </PaginationContent>
+      </Pagination>
+  );
+}
+
 
 function TableSkeleton() {
   return (

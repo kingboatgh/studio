@@ -18,9 +18,10 @@ import {
 
 // Assume a default district for now
 const DISTRICT_ID = 'district1';
+const ITEMS_PER_PAGE = 30;
 
-export async function fetchNsps(db: Firestore, options: { queryString?: string; page?: number; month?: number; year?: number }): Promise<{nsps: NSP[], total: number}> {
-  const { queryString, month, year } = options;
+export async function fetchNsps(db: Firestore, options: { queryString?: string; page?: number; month?: number; year?: number }): Promise<{nsps: NSP[], totalPages: number}> {
+  const { queryString, page = 1, month, year } = options;
   const personnelCol = collection(db, 'districts', DISTRICT_ID, 'personnel');
 
   const nspSnapshot = await getDocs(personnelCol);
@@ -60,7 +61,10 @@ export async function fetchNsps(db: Firestore, options: { queryString?: string; 
     filteredNSPs = filteredNSPs.filter(nsp => !nsp.isDisabled);
   }
 
-  return { nsps: filteredNSPs, total: filteredNSPs.length };
+  const totalPages = Math.ceil(filteredNSPs.length / ITEMS_PER_PAGE);
+  const paginatedNSPs = filteredNSPs.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  return { nsps: paginatedNSPs, totalPages: totalPages };
 }
 
 
