@@ -9,6 +9,7 @@ import { fetchNsps } from "@/lib/data";
 import type { NSP } from "@/lib/definitions";
 import { SubmitButton } from "@/app/nsp/components/submit-button";
 import { Search as SearchIcon } from 'lucide-react';
+import { NSPQuickLook } from "@/app/nsp/components/nsp-quick-look";
 
 function RecordSubmissionsComponent() {
   const [nsps, setNsps] = useState<NSP[]>([]);
@@ -90,7 +91,10 @@ function SubmissionList({ nsps, onSubmissionSuccess }: { nsps: NSP[], onSubmissi
                               <span>{nsp.posting}</span>
                           </p>
                       </div>
-                      <SubmitButton nsp={nsp} onSubmissionSuccess={onSubmissionSuccess} />
+                      <div className="flex items-center gap-2">
+                        <NSPQuickLook nsp={nsp} />
+                        <SubmitButton nsp={nsp} onSubmissionSuccess={onSubmissionSuccess} />
+                      </div>
                   </CardContent>
               </Card>
           ))}
