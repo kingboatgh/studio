@@ -25,7 +25,7 @@ const db = admin.firestore();
 
 // 🔴 Step 1: Replace with the UID of the user you want to make an admin.
 // You can find this in your Firebase project's Authentication section.
-const ADMIN_USER_UID = "ADMIN_USER_UID_PLACEHOLDER";
+const ADMIN_USER_UID = "6DO1xtwoLMWbf7CVW1mAqXEvJwI3";
 
 // 🔵 Step 2: Confirm the admin's email and name.
 const ADMIN_EMAIL = "geniusboateng@gmail.com";
