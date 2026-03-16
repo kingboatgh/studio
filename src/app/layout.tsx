@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Sidebar } from '@/components/layout/sidebar';
 import Header from '@/components/layout/header';
-import { FirebaseClientProvider, useUser, useFirestore } from '@/firebase';
+import { FirebaseClientProvider, useUser, useFirestore, useAuth } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 import { doc, getDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -73,6 +75,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     
     // User is authenticated, check their status in Firestore
     const checkUserStatus = async () => {
+      if (!firestore) return;
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
       if (userDoc.exists() && userDoc.data().status === 'Active') {
@@ -122,7 +125,9 @@ function PendingApprovalPage() {
     const router = useRouter();
 
     const handleLogout = async () => {
-        await auth.signOut();
+        if(auth) {
+            await auth.signOut();
+        }
         router.push('/login');
     }
 
