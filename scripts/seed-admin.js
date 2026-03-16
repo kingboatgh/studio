@@ -23,11 +23,13 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-// 🔴 Replace with the UID of the user you want to make an admin.
+// 🔴 Step 1: Replace with the UID of the user you want to make an admin.
+// You can find this in your Firebase project's Authentication section.
 const ADMIN_USER_UID = "ADMIN_USER_UID_PLACEHOLDER";
-// 🔵 (Optional) Replace with the admin's email and name. These will be helpful for display purposes.
-const ADMIN_EMAIL = "admin@example.com";
-const ADMIN_FULL_NAME = "Admin User";
+
+// 🔵 Step 2: Confirm the admin's email and name.
+const ADMIN_EMAIL = "geniusboateng@gmail.com";
+const ADMIN_FULL_NAME = "Genius Boateng";
 
 
 async function seedAdmin() {
@@ -37,7 +39,7 @@ async function seedAdmin() {
   }
 
   try {
-    console.log(`Setting user ${ADMIN_USER_UID} as admin...`);
+    console.log(`Setting user ${ADMIN_USER_UID} (${ADMIN_EMAIL}) as admin...`);
     
     const adminRef = db.collection("users").doc(ADMIN_USER_UID);
     const adminDoc = await adminRef.get();
