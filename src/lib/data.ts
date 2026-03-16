@@ -14,6 +14,7 @@ import {
   Timestamp,
   deleteDoc,
   orderBy,
+  updateDoc,
 } from 'firebase/firestore';
 
 // Assume a default district for now
@@ -253,9 +254,14 @@ export async function getReportStats(db: Firestore, month: number, year: number)
 
 export async function isUserAdmin(db: Firestore, userId: string): Promise<boolean> {
   if (!userId) return false;
-  const adminDocRef = doc(db, 'admins', userId);
-  const adminDocSnap = await getDoc(adminDocRef);
-  return adminDocSnap.exists();
+  const userDocRef = doc(db, 'users', userId);
+  const userDocSnap = await getDoc(userDocRef);
+
+  if (userDocSnap.exists()) {
+    const userData = userDocSnap.data();
+    return userData.role === 'Admin' && userData.status === 'Active';
+  }
+  return false;
 }
 
 export async function exportNspRegistry(db: Firestore): Promise<NSP[]> {
@@ -383,4 +389,9 @@ export async function deleteAllPersonnel(db: Firestore, adminUser: {uid: string,
     }
 
     await createAuditLog(db, adminUser, 'CLEARED_ALL_NSP_RECORDS', { deletedCount: nspsSnapshot.size });
+}
+
+export async function updateUserProfile(db: Firestore, uid: string, data: { fullName: string }) {
+    const userDocRef = doc(db, 'users', uid);
+    await updateDoc(userDocRef, data);
 }

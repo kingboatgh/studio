@@ -25,6 +25,10 @@ const db = admin.firestore();
 
 // 🔴 Replace with the UID of the user you want to make an admin.
 const ADMIN_USER_UID = "ADMIN_USER_UID_PLACEHOLDER";
+// 🔵 (Optional) Replace with the admin's email and name. These will be helpful for display purposes.
+const ADMIN_EMAIL = "admin@example.com";
+const ADMIN_FULL_NAME = "Admin User";
+
 
 async function seedAdmin() {
   if (!ADMIN_USER_UID || ADMIN_USER_UID === "ADMIN_USER_UID_PLACEHOLDER") {
@@ -35,20 +39,27 @@ async function seedAdmin() {
   try {
     console.log(`Setting user ${ADMIN_USER_UID} as admin...`);
     
-    const adminRef = db.collection("admins").doc(ADMIN_USER_UID);
+    const adminRef = db.collection("users").doc(ADMIN_USER_UID);
     const adminDoc = await adminRef.get();
 
-    if (adminDoc.exists) {
+    if (adminDoc.exists && adminDoc.data().role === 'Admin') {
         console.log(`✅ User ${ADMIN_USER_UID} is already an admin.`);
         return;
     }
 
     await adminRef.set({
-      role: "ADMIN",
+      uid: ADMIN_USER_UID,
+      email: ADMIN_EMAIL,
+      fullName: ADMIN_FULL_NAME,
+      role: "Admin",
+      status: "Active",
+      districtId: null, // Admins are not tied to a specific district
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    }, { merge: true });
 
-    console.log("✅ Admin user seeded successfully");
+    console.log("✅ Admin user seeded successfully in 'users' collection.");
+    console.log("ℹ️  Note: The previous 'admins' collection is no longer used.");
+
   } catch (error) {
     console.error("❌ Error seeding admin user:", error.message);
   } finally {

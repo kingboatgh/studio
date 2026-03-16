@@ -4,15 +4,26 @@ service cloud.firestore {
     
     // Helper function to check for admin privileges
     function isAdmin() {
-      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-    
-    // Admins collection can only be read to check for admin status
-    match /admins/{userId} {
-      allow read: if request.auth != null;
-      allow write: if false; // Nobody can write to the admins collection directly
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc.data.role == 'Admin' && userDoc.data.status == 'Active';
     }
 
+    // Rules for the centralized users collection
+    match /users/{userId} {
+      // New users can create their own profile document upon signup
+      allow create: if request.auth.uid == userId;
+
+      // Users can read their own profile. Admins can read any profile.
+      allow read: if request.auth.uid == userId || isAdmin();
+      
+      // Admins can update any user profile (e.g., to approve/assign them).
+      // A user can update only their own fullName.
+      allow update: if isAdmin() || (request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName']));
+      
+      // Only admins can delete user profiles.
+      allow delete: if isAdmin();
+    }
+    
     // Audit logs can only be managed by admins
     match /auditLogs/{logId} {
       allow read, create, delete: if isAdmin();
@@ -21,24 +32,24 @@ service cloud.firestore {
 
     // This rule is required to allow collection group queries on 'submissions'
     match /{path=**}/submissions/{submissionId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'Active';
     }
 
-    // Districts can be read by any authenticated user, but only written by admins
+    // Districts can be read by any active user, but only written by admins
     match /districts/{districtId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'Active';
       allow write: if isAdmin();
       
-      // Personnel records can be read by any authenticated user, but only written by admins
+      // Personnel records can be read by any active user, but only written by admins
       match /personnel/{personnelId} {
-        allow read: if request.auth != null;
+        allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'Active';
         allow write: if isAdmin();
         
-        // Submissions can be created by any authenticated user, but only updated/deleted by admins
+        // Submissions can be created by any active user, but only updated/deleted by admins
         match /submissions/{submissionId} {
           // Read is covered by the collection group rule above.
           // We still need explicit write rules for this specific path.
-          allow create: if request.auth != null;
+          allow create: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'Active';
           allow update, delete: if isAdmin();
         }
       }

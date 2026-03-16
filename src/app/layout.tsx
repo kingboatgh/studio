@@ -3,12 +3,15 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Sidebar } from '@/components/layout/sidebar';
 import Header from '@/components/layout/header';
-import { FirebaseClientProvider, useUser } from '@/firebase';
+import { FirebaseClientProvider, useUser, useFirestore } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Poppins as FontSans } from 'next/font/google';
 import { cn } from '@/lib/utils';
+import { doc, getDoc } from 'firebase/firestore';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -49,26 +52,50 @@ export default function RootLayout({
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   const pathname = usePathname();
+  const [status, setStatus] = useState<'loading' | 'approved' | 'pending' | 'no-user'>('loading');
 
   useEffect(() => {
-    if (!isUserLoading && !user && pathname !== '/login') {
-      router.replace('/login');
+    if (isUserLoading) {
+      setStatus('loading');
+      return;
     }
-    if (!isUserLoading && user && pathname === '/login') {
-      router.replace('/');
-    }
-  }, [user, isUserLoading, router, pathname]);
 
-  if (isUserLoading || (!user && pathname !== '/login') || (user && pathname === '/login')) {
-    return (
+    if (!user) {
+      setStatus('no-user');
+      if (pathname !== '/login') {
+        router.replace('/login');
+      }
+      return;
+    }
+    
+    // User is authenticated, check their status in Firestore
+    const checkUserStatus = async () => {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists() && userDoc.data().status === 'Active') {
+        setStatus('approved');
+        if (pathname === '/login') {
+          router.replace('/');
+        }
+      } else {
+        setStatus('pending');
+      }
+    };
+    checkUserStatus();
+
+  }, [user, isUserLoading, router, pathname, firestore]);
+
+  if (status === 'loading' || (status !== 'no-user' && pathname === '/login')) {
+     return (
         <div className="flex min-h-screen w-full items-center justify-center bg-background">
-            <div className="w-full max-w-md space-y-4 rounded-xl p-8">
+            <div className="w-full max-w-sm space-y-4 rounded-xl p-8">
                 <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
-                 <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-10 w-full" />
             </div>
         </div>
     );
@@ -78,5 +105,52 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  return <>{children}</>;
+  if (status === 'pending') {
+    return <PendingApprovalPage />;
+  }
+
+  if (status === 'approved') {
+    return <>{children}</>;
+  }
+
+  return null; // Should be handled by redirects
+}
+
+function PendingApprovalPage() {
+    const { user } = useUser();
+    const auth = useAuth();
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        await auth.signOut();
+        router.push('/login');
+    }
+
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+             <Card className="mx-auto max-w-md w-full shadow-2xl shadow-black/10">
+                <CardHeader>
+                    <CardTitle>Account Pending Approval</CardTitle>
+                    <CardDescription>
+                        Your account has been created successfully but requires administrator approval.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Pending Status</AlertTitle>
+                        <AlertDescription>
+                            Please contact your district administrator to activate your account. You will not be able to access the system until your account is approved.
+                        </AlertDescription>
+                    </Alert>
+                    <p className="text-center text-sm text-muted-foreground mt-4">
+                        Logged in as: <span className="font-medium">{user?.email}</span>
+                    </p>
+                </CardContent>
+                <CardFooter>
+                    <Button variant="outline" className="w-full" onClick={handleLogout}>Log Out</Button>
+                </CardFooter>
+             </Card>
+        </div>
+    )
 }

@@ -173,29 +173,53 @@
         "timestamp"
       ]
     },
-    "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "User",
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user of the system, storing profile and role information.",
       "type": "object",
-      "description": "Represents a user of the system. Does not store authentication data.",
       "properties": {
-        "id": {
+        "uid": {
           "type": "string",
-          "description": "Unique identifier for the user (matches auth uid)."
+          "description": "Matches the Firebase Authentication UID."
         },
-        "username": {
+        "email": {
           "type": "string",
-          "description": "The username of the user."
+          "format": "email"
         },
-        "isAdmin": {
-          "type": "boolean",
-          "description": "Indicates if the user has administrative privileges."
+        "fullName": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "Admin",
+            "Desk Officer"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pending",
+            "Active",
+            "Disabled"
+          ]
+        },
+        "districtId": {
+          "type": "string",
+          "description": "The ID of the district the user is assigned to."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
         }
       },
       "required": [
-        "id",
-        "username",
-        "isAdmin"
+        "uid",
+        "email",
+        "fullName",
+        "role",
+        "status",
+        "createdAt"
       ]
     },
     "District": {
@@ -269,6 +293,22 @@
   "firestore": {
     "structure": [
       {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores profile information for all system users, including roles and status.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user (matches auth uid)."
+            }
+          ]
+        }
+      },
+      {
         "path": "/districts/{districtId}",
         "definition": {
           "entityName": "District",
@@ -280,42 +320,6 @@
             {
               "name": "districtId",
               "description": "The unique identifier of the district."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/admins/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Collection to store admin user flags. The existence of a document with isAdmin:true indicates admin rights.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user (matches auth uid)."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/districts/{districtId}/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Represents a user (Desk Officer or Admin) associated with a district.",
-          "params": [
-            {
-              "name": "districtId",
-              "description": "The unique identifier of the district."
-            },
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
             }
           ]
         }
@@ -381,6 +385,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the NSP management and submission system. The structure is optimized for the core requirements of NSP record management, monthly submission tracking, and role-based authentication. The use of a top-level `admins` collection provides a simple and secure way to manage admin privileges without relying on custom claims. The `auditLogs` collection is added to track critical admin actions for security and accountability."
+    "reasoning": "The Firestore data structure is designed to support the NSP management and submission system. User data is centralized in a top-level `users` collection to simplify role management and user profiles. The previous `admins` collection is removed in favor of a `role` property on the user document. This provides a single source of truth for user information and simplifies security rules. The `auditLogs` collection is kept to track critical admin actions for security and accountability."
   }
 }
