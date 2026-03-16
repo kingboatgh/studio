@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { cn } from "@/lib/utils";
 
 
 // Add declaration for jspdf-autotable plugin
@@ -179,7 +180,7 @@ function ReportsComponent() {
         <div>
             <h1 className="text-2xl font-bold tracking-tight">Reports & Export</h1>
             <p className="text-muted-foreground mt-1">
-            Generate and download submission tracking reports
+            Generate and download submission tracking reports for {format(selectedDate, 'MMMM yyyy')}
             </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -206,20 +207,12 @@ function ReportsComponent() {
         </div>
       </div>
       
-      <Card>
-        <CardHeader>
-            <CardTitle>Monthly Overview</CardTitle>
-            <CardDescription>{format(selectedDate, 'MMMM yyyy')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="grid gap-px grid-cols-2 lg:grid-cols-4 bg-border rounded-lg overflow-hidden">
-                <StatCard title="Active NSPs" value={stats.active} icon={<Users />} loading={loading} />
-                <StatCard title="Submitted" value={stats.submitted} icon={<ClipboardCheck />} loading={loading} />
-                <StatCard title="Pending" value={stats.pending} icon={<Clock />} loading={loading} />
-                <StatCard title="Completion" value={`${Math.round(completionPercentage)}%`} icon={<TrendingUp />} loading={loading} />
-            </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard title="Active NSPs" value={stats.active} icon={<Users />} loading={loading} variant="blue" />
+          <StatCard title="Submitted" value={stats.submitted} icon={<ClipboardCheck />} loading={loading} variant="green"/>
+          <StatCard title="Pending" value={stats.pending} icon={<Clock />} loading={loading} variant="orange" />
+          <StatCard title="Completion" value={`${Math.round(completionPercentage)}%`} icon={<TrendingUp />} loading={loading} variant="indigo" />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <Card className="lg:col-span-2">
@@ -315,14 +308,29 @@ function ReportsComponent() {
   );
 }
 
-function StatCard({ title, value, icon, loading }: { title: string, value?: number | string, icon: React.ReactNode, loading: boolean }) {
+const statCardVariants = {
+  blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' },
+  green: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-200' },
+  orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' },
+  indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200' },
+};
+
+function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: string, value?: number | string, icon: React.ReactNode, loading: boolean, variant?: keyof typeof statCardVariants }) {
+    const colors = statCardVariants[variant];
     return (
-      <div className="bg-card p-4">
-        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">{React.cloneElement(icon as React.ReactElement, { className: "h-3.5 w-3.5"})} {title}</p>
-         {loading ? <Skeleton className="h-7 w-12 mt-1" /> : (
-            <p className="text-2xl font-bold">{value}</p>
-        )}
-      </div>
+      <Card className={cn("border-l-4", colors.border)}>
+        <CardContent className="p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            {loading ? <Skeleton className="h-8 w-16 mt-1" /> : (
+              <p className="text-2xl font-bold">{value}</p>
+            )}
+          </div>
+          <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", colors.bg)}>
+            {React.cloneElement(icon as React.ReactElement, { className: cn("h-5 w-5", colors.text) })}
+          </div>
+        </CardContent>
+      </Card>
     )
 }
 
