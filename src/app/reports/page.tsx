@@ -178,7 +178,7 @@ function ReportsComponent() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start gap-4">
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">Reports & Export</h1>
+            <h1 className="text-xl font-bold tracking-tight">Reports & Export</h1>
             <p className="text-muted-foreground mt-1">
             Generate and download submission tracking reports for {format(selectedDate, 'MMMM yyyy')}
             </p>
@@ -217,7 +217,7 @@ function ReportsComponent() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <Card className="lg:col-span-2">
             <CardHeader>
-                <CardTitle>Export Center</CardTitle>
+                <CardTitle className="text-lg">Export Center</CardTitle>
                 <CardDescription>Download reports in CSV or PDF format.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-1">
@@ -258,7 +258,7 @@ function ReportsComponent() {
 
           <Card className="lg:col-span-3">
             <CardHeader>
-                <CardTitle>Staff Submissions Report</CardTitle>
+                <CardTitle className="text-lg">Staff Submissions Report</CardTitle>
                 <CardDescription>Submissions recorded for {format(selectedDate, 'MMMM yyyy')}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -322,8 +322,8 @@ function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: st
         <CardContent className="p-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            {loading ? <Skeleton className="h-8 w-16 mt-1" /> : (
-              <p className="text-2xl font-bold">{value}</p>
+            {loading ? <Skeleton className="h-7 w-16 mt-1" /> : (
+              <p className="text-xl font-bold">{value}</p>
             )}
           </div>
           <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", colors.bg)}>

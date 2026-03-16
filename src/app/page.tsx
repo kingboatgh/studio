@@ -45,7 +45,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
           An overview of NSP submissions for {format(new Date(), 'MMMM yyyy')}.
         </p>
@@ -61,7 +61,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="text-lg">Quick Actions</CardTitle>
             <CardDescription>Key actions at your fingertips.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
@@ -74,8 +74,8 @@ export default function DashboardPage() {
         <Card className="lg:col-span-3">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Monthly Progress</CardTitle>
-              {loading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold text-primary">{Math.round(submissionPercentage)}%</p>}
+              <CardTitle className="text-lg">Monthly Progress</CardTitle>
+              {loading ? <Skeleton className="h-7 w-20" /> : <p className="text-xl font-bold text-primary">{Math.round(submissionPercentage)}%</p>}
             </div>
              <CardDescription>Submission completion for the current month.</CardDescription>
           </CardHeader>
@@ -112,8 +112,8 @@ function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: st
       <CardContent className="p-4 flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          {loading ? <Skeleton className="h-8 w-16 mt-1" /> : (
-            <p className="text-2xl font-bold">{value?.toLocaleString() ?? 0}</p>
+          {loading ? <Skeleton className="h-7 w-16 mt-1" /> : (
+            <p className="text-xl font-bold">{value?.toLocaleString() ?? 0}</p>
           )}
         </div>
         <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", colors.bg)}>
@@ -129,7 +129,7 @@ function ActionButton({ href, icon, children, isPrimary = false }: { href: strin
     <Link href={href} className="block">
       <Button
         variant={isPrimary ? "default" : "outline"}
-        className="w-full justify-start h-11 px-4"
+        className="w-full justify-start h-9 px-4"
       >
         <div className="flex items-center gap-3">
           {icon}
