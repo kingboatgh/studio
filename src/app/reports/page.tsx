@@ -183,9 +183,9 @@ function ReportsComponent() {
             Generate and download submission tracking reports for {format(selectedDate, 'MMMM yyyy')}
             </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex w-full shrink-0 items-center gap-2 md:w-auto">
             <Select value={String(selectedDate.getMonth() + 1)} onValueChange={handleMonthChange}>
-                <SelectTrigger className="h-9 w-[130px] text-xs">
+                <SelectTrigger className="h-9 text-xs w-full md:w-[130px]">
                     <SelectValue placeholder="Select month" />
                 </SelectTrigger>
                 <SelectContent>
@@ -195,7 +195,7 @@ function ReportsComponent() {
                 </SelectContent>
             </Select>
             <Select value={String(selectedDate.getFullYear())} onValueChange={handleYearChange}>
-                <SelectTrigger className="h-9 w-[100px] text-xs">
+                <SelectTrigger className="h-9 text-xs w-full md:w-[100px]">
                     <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -336,19 +336,19 @@ function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: st
 
 function ReportItem({ title, description, onCsvExport, onPdfExport, isExporting, exportKey }: { title: string, description: string, onCsvExport: () => void, onPdfExport: () => void, isExporting: string | null, exportKey: string }) {
     return (
-        <div className="p-2 rounded-md hover:bg-muted/50 transition-colors">
-            <div className="flex items-center justify-between">
-                <div>
+        <div className="p-3 rounded-md hover:bg-muted/50 transition-colors">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2">
+                <div className="w-full">
                     <h4 className="font-medium text-sm">{title}</h4>
                     <p className="text-xs text-muted-foreground">{description}</p>
                 </div>
-                <div className="flex gap-1.5 shrink-0">
+                <div className="flex gap-2 shrink-0 w-full sm:w-auto">
                     <Button 
                         size="sm"
                         onClick={onCsvExport} 
                         disabled={!!isExporting} 
                         variant="outline"
-                        className="h-8 text-xs"
+                        className="h-8 text-xs w-full"
                     >
                         {isExporting === `${exportKey}-csv` ? '...' : 'CSV'}
                     </Button>
@@ -357,7 +357,7 @@ function ReportItem({ title, description, onCsvExport, onPdfExport, isExporting,
                         onClick={onPdfExport} 
                         disabled={!!isExporting} 
                         variant="outline"
-                        className="h-8 text-xs"
+                        className="h-8 text-xs w-full"
                     >
                         {isExporting === `${exportKey}-pdf` ? '...' : 'PDF'}
                     </Button>

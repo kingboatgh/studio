@@ -22,28 +22,28 @@ export function NSPTable({ nsps, isAdmin, onRefetch }: { nsps: NSP[], isAdmin: b
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[120px]">System ID</TableHead>
-            <TableHead>Full Name</TableHead>
-            <TableHead className="hidden md:table-cell">NSS Number</TableHead>
-            <TableHead className="hidden lg:table-cell">Place of Service</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right w-[120px]">Actions</TableHead>
+            <TableHead className="w-[120px] px-2 sm:px-4">System ID</TableHead>
+            <TableHead className="px-2 sm:px-4">Full Name</TableHead>
+            <TableHead className="hidden md:table-cell px-2 sm:px-4">NSS Number</TableHead>
+            <TableHead className="hidden lg:table-cell px-2 sm:px-4">Place of Service</TableHead>
+            <TableHead className="px-2 sm:px-4">Status</TableHead>
+            <TableHead className="text-right w-[120px] px-2 sm:px-4">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {nsps.length > 0 ? (
             nsps.map((nsp) => (
               <TableRow key={nsp.id} className="transition-colors hover:bg-muted/50">
-                <TableCell className="font-medium py-3">{nsp.id}</TableCell>
-                <TableCell className="py-3 font-medium">{nsp.fullName}</TableCell>
-                <TableCell className="hidden md:table-cell py-3">{nsp.nssNumber}</TableCell>
-                <TableCell className="hidden lg:table-cell py-3">{nsp.posting}</TableCell>
-                <TableCell className="py-3">
+                <TableCell className="font-medium px-2 sm:px-4 py-3">{nsp.id}</TableCell>
+                <TableCell className="px-2 sm:px-4 py-3 font-medium">{nsp.fullName}</TableCell>
+                <TableCell className="hidden md:table-cell px-2 sm:px-4 py-3">{nsp.nssNumber}</TableCell>
+                <TableCell className="hidden lg:table-cell px-2 sm:px-4 py-3">{nsp.posting}</TableCell>
+                <TableCell className="px-2 sm:px-4 py-3">
                   <Badge variant={nsp.isDisabled ? 'outline' : 'secondary'} className={!nsp.isDisabled ? 'border-green-400 bg-green-50 text-green-700' : ''}>
                     {nsp.isDisabled ? 'Inactive' : 'Active'}
                   </Badge>
                 </TableCell>
-                <TableCell className="py-3">
+                <TableCell className="px-2 sm:px-4 py-3">
                   <div className="flex items-center justify-end gap-2">
                     <NSPQuickLook nsp={nsp} />
                     {isAdmin && (

@@ -160,9 +160,9 @@ export default function BulkUploadPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex w-full items-center space-x-2">
+          <div className="flex flex-col sm:flex-row w-full items-center gap-2">
             <Input type="file" accept=".csv" onChange={handleFileChange} disabled={isUploading} className="h-9"/>
-            <Button onClick={handleUpload} disabled={!file || isUploading} size="sm">
+            <Button onClick={handleUpload} disabled={!file || isUploading} size="sm" className="w-full sm:w-auto shrink-0">
               <Upload className="mr-2 h-4 w-4" />
               {isUploading ? 'Uploading...' : 'Upload File'}
             </Button>
@@ -206,7 +206,7 @@ export default function BulkUploadPage() {
             </div>
             <div>
                 <h4 className="font-medium">Required Columns</h4>
-                <ul className="mt-2 list-disc list-inside space-y-1 text-sm text-muted-foreground columns-2">
+                <ul className="mt-2 list-disc list-inside space-y-1 text-sm text-muted-foreground sm:columns-2">
                     {requiredHeaders.map(h => <li key={h}><code className="font-semibold text-foreground">{h}</code></li>)}
                 </ul>
             </div>
