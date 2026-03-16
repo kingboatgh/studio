@@ -28,7 +28,7 @@ export default function NspRegistryPage() {
     <div className="space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-tight">NSP Registry</h1>
+            <h1 className="text-base font-bold tracking-tight">NSP Registry</h1>
             <p className="text-muted-foreground">Manage all personnel records.</p>
           </div>
           <div className="flex w-full items-center gap-2 md:w-auto">

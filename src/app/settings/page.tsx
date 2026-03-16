@@ -87,7 +87,7 @@ function SettingsContent() {
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
             <div>
-                <h1 className="text-2xl font-bold tracking-tight">Admin Settings</h1>
+                <h1 className="text-lg font-bold tracking-tight">Admin Settings</h1>
                 <p className="text-muted-foreground">Manage system-wide configurations and dangerous operations.</p>
             </div>
             <Card className="border-destructive">

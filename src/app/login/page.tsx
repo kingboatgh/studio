@@ -49,7 +49,7 @@ export default function LoginPage() {
                <div className="bg-primary p-3 rounded-xl">
                  <Building className="h-6 w-6 text-primary-foreground" />
                </div>
-               <h1 className="text-xl font-bold tracking-tight">NSP Digital</h1>
+               <h1 className="text-lg font-bold tracking-tight">NSP Digital</h1>
             </div>
           <CardTitle>Welcome Back</CardTitle>
           <CardDescription>

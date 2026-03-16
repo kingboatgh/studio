@@ -63,29 +63,29 @@ export default function Header() {
         <SheetContent side="left" className="bg-secondary p-4">
           <nav className="grid gap-2 text-lg font-medium">
             <Link href="/" className="flex items-center gap-3 text-base font-semibold text-primary mb-4 px-2">
-              <div className="bg-primary p-2 rounded-lg">
+              <div className="bg-primary p-1.5 rounded-md">
                 <Building className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="text-foreground text-base">NSP Digital</span>
+              <span className="text-foreground text-sm">NSP Digital</span>
             </Link>
             <NavLink href="/">
-                <LayoutDashboard className="h-4 w-4" />
+                <LayoutDashboard className="h-3.5 w-3.5" />
                 Dashboard
             </NavLink>
             <NavLink href="/submissions">
-                <FileCheck className="h-4 w-4" />
+                <FileCheck className="h-3.5 w-3.5" />
                 Record Submissions
             </NavLink>
             <NavLink href="/reports">
-                <FileBarChart className="h-4 w-4" />
+                <FileBarChart className="h-3.5 w-3.5" />
                 Reports
             </NavLink>
             <NavLink href="/nsp">
-                <Users className="h-4 w-4" />
+                <Users className="h-3.5 w-3.5" />
                 NSP Registry
             </NavLink>
             <NavLink href="/nsp/upload">
-                <Upload className="h-4 w-4" />
+                <Upload className="h-3.5 w-3.5" />
                 Bulk Upload
             </NavLink>
             {isAdmin && (
@@ -93,11 +93,11 @@ export default function Header() {
                     <Separator className="my-2 bg-border/70" />
                     <p className="px-4 text-sm font-semibold text-muted-foreground/80">Admin</p>
                     <NavLink href="/audit-logs">
-                        <History className="h-4 w-4" />
+                        <History className="h-3.5 w-3.5" />
                         Audit Logs
                     </NavLink>
                     <NavLink href="/settings">
-                        <ShieldAlert className="h-4 w-4" />
+                        <ShieldAlert className="h-3.5 w-3.5" />
                         Settings
                     </NavLink>
                 </>

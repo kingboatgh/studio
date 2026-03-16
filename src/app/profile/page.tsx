@@ -73,7 +73,7 @@ export default function ProfilePage() {
   if (isUserLoading || loadingRole) {
     return (
       <div className="mx-auto max-w-lg space-y-6">
-        <h1 className="text-xl font-bold tracking-tight">User Profile</h1>
+        <h1 className="text-base font-bold tracking-tight">User Profile</h1>
         <Card>
           <CardHeader className="items-center text-center border-b p-6">
             <Skeleton className="h-24 w-24 rounded-full mb-4" />
@@ -104,7 +104,7 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
-       <h1 className="text-xl font-bold tracking-tight">User Profile</h1>
+       <h1 className="text-base font-bold tracking-tight">User Profile</h1>
        <form onSubmit={handleProfileUpdate}>
         <Card>
           <CardHeader className="items-center text-center border-b p-6">
@@ -114,7 +114,7 @@ export default function ProfilePage() {
                 {user.email?.charAt(0).toUpperCase() ?? 'U'}
               </AvatarFallback>
             </Avatar>
-            <CardTitle className="text-lg">{displayName || user.email}</CardTitle>
+            <CardTitle className="text-base">{displayName || user.email}</CardTitle>
             <CardDescription>{user.email}</CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-4">
