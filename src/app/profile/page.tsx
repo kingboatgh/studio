@@ -72,25 +72,26 @@ export default function ProfilePage() {
 
   if (isUserLoading || loadingRole) {
     return (
-      <div className="mx-auto max-w-lg">
+      <div className="mx-auto max-w-lg space-y-6">
+        <h1 className="text-xl font-bold tracking-tight">User Profile</h1>
         <Card>
-          <CardHeader className="items-center text-center">
-            <Skeleton className="h-24 w-24 rounded-full" />
-            <Skeleton className="h-6 w-48 mt-4" />
+          <CardHeader className="items-center text-center border-b p-6">
+            <Skeleton className="h-24 w-24 rounded-full mb-4" />
+            <Skeleton className="h-5 w-48" />
             <Skeleton className="h-4 w-56 mt-2" />
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-6">
              <div className="space-y-2">
                 <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-9 w-full" />
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="flex items-center justify-between rounded-lg border p-3">
               <Skeleton className="h-5 w-20" />
               <Skeleton className="h-6 w-32" />
             </div>
           </CardContent>
-          <CardFooter>
-            <Skeleton className="h-10 w-24 ml-auto" />
+          <CardFooter className="bg-muted/50 px-6 py-3 flex justify-end">
+            <Skeleton className="h-9 w-24" />
           </CardFooter>
         </Card>
       </div>
@@ -102,21 +103,21 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6">
-       <h1 className="text-2xl font-bold tracking-tight">User Profile</h1>
+    <div className="mx-auto max-w-lg space-y-6">
+       <h1 className="text-xl font-bold tracking-tight">User Profile</h1>
        <form onSubmit={handleProfileUpdate}>
         <Card>
-          <CardHeader className="items-center text-center border-b p-8">
-            <Avatar className="h-28 w-28 mb-4">
+          <CardHeader className="items-center text-center border-b p-6">
+            <Avatar className="h-24 w-24 mb-4">
               <AvatarImage src={user.photoURL ?? ''} alt={user.email ?? 'User'} />
-              <AvatarFallback className="text-4xl">
+              <AvatarFallback className="text-3xl">
                 {user.email?.charAt(0).toUpperCase() ?? 'U'}
               </AvatarFallback>
             </Avatar>
-            <CardTitle className="text-xl">{displayName || user.email}</CardTitle>
+            <CardTitle className="text-lg">{displayName || user.email}</CardTitle>
             <CardDescription>{user.email}</CardDescription>
           </CardHeader>
-          <CardContent className="p-6 space-y-6">
+          <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="displayName">Full Name</Label>
               <Input
@@ -127,7 +128,7 @@ export default function ProfilePage() {
               />
                <p className="text-sm text-muted-foreground">This name will be used on submissions and reports.</p>
             </div>
-            <div className="flex items-center justify-between rounded-lg border bg-muted/50 p-4">
+            <div className="flex items-center justify-between rounded-lg border bg-muted/50 p-3">
               <div className="flex items-center gap-3 text-sm font-medium">
                 <UserIcon className="h-5 w-5 text-muted-foreground" />
                 <span>Account Role</span>
@@ -138,7 +139,7 @@ export default function ProfilePage() {
               </Badge>
             </div>
           </CardContent>
-          <CardFooter className="bg-muted/50 px-6 py-4 flex justify-end">
+          <CardFooter className="bg-muted/50 px-6 py-3 flex justify-end">
             <Button type="submit" disabled={isUpdating}>
               {isUpdating ? 'Saving...' : 'Save Changes'}
             </Button>
