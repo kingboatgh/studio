@@ -26,31 +26,31 @@ export function Sidebar() {
 
   return (
     <aside className="hidden w-72 flex-col border-r bg-secondary p-4 md:flex">
-      <div className="mb-8 flex items-center gap-3 px-2">
-        <div className="bg-primary p-2.5 rounded-lg">
-          <Building className="h-5 w-5 text-primary-foreground" />
+      <div className="mb-6 flex items-center gap-3 px-2">
+        <div className="bg-primary p-2 rounded-lg">
+          <Building className="h-4 w-4 text-primary-foreground" />
         </div>
-        <h1 className="text-lg font-bold text-foreground">NSP Digital</h1>
+        <h1 className="text-base font-bold text-foreground">NSP Digital</h1>
       </div>
       <nav className="flex flex-col gap-1.5 font-medium">
         <NavLink href="/">
-          <LayoutDashboard />
+          <LayoutDashboard className="h-4 w-4" />
           Dashboard
         </NavLink>
         <NavLink href="/submissions">
-          <FileCheck />
+          <FileCheck className="h-4 w-4" />
           Record Submissions
         </NavLink>
         <NavLink href="/reports">
-          <FileBarChart />
+          <FileBarChart className="h-4 w-4" />
           Reports
         </NavLink>
         <NavLink href="/nsp">
-          <Users />
+          <Users className="h-4 w-4" />
           NSP Registry
         </NavLink>
         <NavLink href="/nsp/upload">
-          <Upload />
+          <Upload className="h-4 w-4" />
           Bulk Upload
         </NavLink>
         {isAdmin && (
@@ -58,11 +58,11 @@ export function Sidebar() {
                 <Separator className="my-2 bg-border/70" />
                 <p className="px-4 text-xs font-semibold uppercase text-muted-foreground/80 tracking-wider mb-1">Admin</p>
                 <NavLink href="/audit-logs">
-                    <History className="h-5 w-5" />
+                    <History className="h-4 w-4" />
                     Audit Logs
                 </NavLink>
                 <NavLink href="/settings">
-                    <ShieldAlert className="h-5 w-5" />
+                    <ShieldAlert className="h-4 w-4" />
                     Settings
                 </NavLink>
             </>
@@ -70,7 +70,7 @@ export function Sidebar() {
       </nav>
       <div className="mt-auto">
         <Button variant="ghost" className="w-full justify-start text-muted-foreground h-9" onClick={handleLogout}>
-            <LogOut className="mr-3 h-5 w-5" />
+            <LogOut className="mr-2 h-4 w-4" />
             Log Out
         </Button>
       </div>

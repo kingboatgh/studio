@@ -55,37 +55,37 @@ export default function Header() {
     <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 sticky top-0 z-30">
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="shrink-0 md:hidden h-8 w-8">
+          <Button variant="outline" size="icon" className="shrink-0 md:hidden">
             <Menu className="h-4 w-4" />
             <span className="sr-only">Toggle navigation menu</span>
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="bg-secondary p-4">
           <nav className="grid gap-2 text-lg font-medium">
-            <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primary mb-4 px-2">
-              <div className="bg-primary p-2.5 rounded-lg">
-                <Building className="h-5 w-5 text-primary-foreground" />
+            <Link href="/" className="flex items-center gap-3 text-base font-semibold text-primary mb-4 px-2">
+              <div className="bg-primary p-2 rounded-lg">
+                <Building className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="text-foreground text-lg">NSP Digital</span>
+              <span className="text-foreground text-base">NSP Digital</span>
             </Link>
             <NavLink href="/">
-                <LayoutDashboard className="h-5 w-5" />
+                <LayoutDashboard className="h-4 w-4" />
                 Dashboard
             </NavLink>
             <NavLink href="/submissions">
-                <FileCheck className="h-5 w-5" />
+                <FileCheck className="h-4 w-4" />
                 Record Submissions
             </NavLink>
             <NavLink href="/reports">
-                <FileBarChart className="h-5 w-5" />
+                <FileBarChart className="h-4 w-4" />
                 Reports
             </NavLink>
             <NavLink href="/nsp">
-                <Users className="h-5 w-5" />
+                <Users className="h-4 w-4" />
                 NSP Registry
             </NavLink>
             <NavLink href="/nsp/upload">
-                <Upload className="h-5 w-5" />
+                <Upload className="h-4 w-4" />
                 Bulk Upload
             </NavLink>
             {isAdmin && (
@@ -93,11 +93,11 @@ export default function Header() {
                     <Separator className="my-2 bg-border/70" />
                     <p className="px-4 text-sm font-semibold text-muted-foreground/80">Admin</p>
                     <NavLink href="/audit-logs">
-                        <History className="h-5 w-5" />
+                        <History className="h-4 w-4" />
                         Audit Logs
                     </NavLink>
                     <NavLink href="/settings">
-                        <ShieldAlert className="h-5 w-5" />
+                        <ShieldAlert className="h-4 w-4" />
                         Settings
                     </NavLink>
                 </>
@@ -108,7 +108,7 @@ export default function Header() {
       <div className="flex w-full items-center justify-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
+            <Button variant="ghost" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user.photoURL ?? ""} alt="User" />
                 <AvatarFallback>{user.email?.charAt(0).toUpperCase() ?? 'A'}</AvatarFallback>
