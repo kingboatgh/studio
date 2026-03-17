@@ -37,7 +37,7 @@ export default function LoginPage() {
                <div className="bg-primary p-2 rounded-lg">
                  <Building className="h-5 w-5 text-primary-foreground" />
                </div>
-               <h1 className="text-sm font-bold tracking-tight">NSP Digital</h1>
+               <h1 className="text-sm font-bold tracking-tight">Nsp Manager</h1>
             </div>
             <TabsList className="grid w-full grid-cols-2 h-9">
               <TabsTrigger value="login" className="text-xs">Login</TabsTrigger>

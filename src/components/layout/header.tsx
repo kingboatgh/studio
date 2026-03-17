@@ -32,7 +32,7 @@ const getPageTitle = (pathname: string) => {
     if (pathname.startsWith('/nsp') && pathname.includes('/edit')) return 'Edit NSP Record';
     if (pathname.startsWith('/nsp')) return 'NSP Registry';
     if (pathname.startsWith('/login')) return 'Login';
-    return 'NSP Digital Submissions';
+    return 'Nsp Manager';
 }
 
 export default function Header() {
@@ -66,7 +66,7 @@ export default function Header() {
               <div className="bg-primary p-1.5 rounded-md">
                 <Building className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="text-foreground text-sm">NSP Digital</span>
+              <span className="text-foreground text-sm">Nsp Manager</span>
             </Link>
             <NavLink href="/">
                 <LayoutDashboard className="h-3.5 w-3.5" />

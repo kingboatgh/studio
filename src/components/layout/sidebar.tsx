@@ -26,12 +26,12 @@ export function Sidebar() {
 
   return (
     <aside className="hidden w-64 flex-col border-r bg-secondary p-4 md:flex">
-      <div className="mb-4 flex items-center gap-2.5 px-2">
+      <Link href="/" className="mb-4 flex items-center gap-2.5 px-2">
         <div className="bg-primary p-1.5 rounded-md">
           <Building className="h-4 w-4 text-primary-foreground" />
         </div>
-        <h1 className="text-sm font-bold text-foreground">NSP Digital</h1>
-      </div>
+        <h1 className="text-sm font-bold text-foreground">Nsp Manager</h1>
+      </Link>
       <nav className="flex flex-col gap-1 text-sm font-medium">
         <NavLink href="/">
           <LayoutDashboard className="h-3.5 w-3.5" />

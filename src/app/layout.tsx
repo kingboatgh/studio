@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>NSP Digital Submissions</title>
+        <title>Nsp Manager</title>
         <meta name="description" content="NSP Management and Monthly Submission System" />
       </head>
       <body className={cn('antialiased font-sans', fontSans.variable)}>
