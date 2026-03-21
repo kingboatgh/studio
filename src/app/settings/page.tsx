@@ -1,17 +1,16 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
-import { deleteAllPersonnel } from '@/lib/data';
+import { deleteAllPersonnel, exportNspRegistry } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, FileDown } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +23,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import Papa from 'papaparse';
+
 
 export default function SettingsPage() {
     const { isAdmin, isAdminLoading } = useAdmin();
@@ -56,6 +57,7 @@ function SettingsContent() {
     const { user } = useUser();
     const { toast } = useToast();
     const [isPending, setIsPending] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const [confirmationText, setConfirmationText] = useState('');
     const requiredConfirmation = 'permanently delete all records';
 
@@ -83,6 +85,60 @@ function SettingsContent() {
             setIsPending(false);
         }
     };
+
+    const downloadBlob = (content: string, filename: string, contentType: string) => {
+        const blob = new Blob([content], { type: contentType });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    const handleExportRegistry = async () => {
+        if (!firestore) return;
+        setIsExporting(true);
+        try {
+            const data = await exportNspRegistry(firestore);
+            if (data.length === 0) {
+                toast({ title: 'No Data', description: 'The registry is empty, nothing to export.' });
+                return;
+            }
+    
+            const csvData = data.map(row => ({
+                'System ID': row.id,
+                'Email': row.email,
+                'NSS Number': row.nssNumber,
+                'Surname': row.surname,
+                'Other Names': row.otherNames,
+                'Institution': row.institution,
+                'Course of Study': row.courseOfStudy,
+                'Gender': row.gender,
+                'Phone': row.phone,
+                'Residential Address': row.residentialAddress,
+                'GPS Address': row.gpsAddress,
+                'Posting': row.posting,
+                'Region': row.region,
+                'District': row.district,
+                'Next of Kin Name': row.nextOfKinName,
+                'Next of Kin Phone': row.nextOfKinPhone,
+                'Employed': row.isEmployed ? 'Yes' : 'No'
+            }));
+            
+            const csv = Papa.unparse(csvData);
+            downloadBlob(csv, `nsp_registry_backup_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8;');
+    
+            toast({ title: 'Export Successful', description: 'The NSP registry has been downloaded.' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Export Failed', description: error.message || 'An unknown error occurred.' });
+        } finally {
+            setIsExporting(false);
+        }
+    }
+
 
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
@@ -112,10 +168,32 @@ function SettingsContent() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This will permanently delete all <strong>NSP records</strong> and all of their associated <strong>monthly submissions</strong>. This action cannot be undone and data will be lost forever.
+                                        This will permanently delete all <strong>NSP records</strong> and all of their associated <strong>monthly submissions</strong>. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
-                                <div className="py-4 space-y-2">
+                                
+                                <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+                                    <div className='flex items-start gap-3'>
+                                        <FileDown className="h-5 w-5 text-amber-700 mt-0.5 shrink-0" />
+                                        <div>
+                                            <h4 className="font-semibold text-amber-900">Export Data First</h4>
+                                            <p className="text-xs text-amber-800 mt-1 mb-2">
+                                                It is highly recommended to export a full backup of the NSP registry before clearing all data.
+                                            </p>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleExportRegistry}
+                                                disabled={isExporting}
+                                                className="h-8 text-xs bg-white/50 border-amber-300 hover:bg-white"
+                                            >
+                                                {isExporting ? 'Exporting...' : 'Export Registry (CSV)'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2 space-y-2">
                                     <Label htmlFor="confirmation">To confirm, type "<span className="font-bold text-destructive">{requiredConfirmation}</span>" below:</Label>
                                     <Input 
                                         id="confirmation"
