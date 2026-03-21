@@ -1,31 +1,49 @@
-# Firebase Studio
+# NSP Manager (National Service Personnel Manager)
 
-This is a NextJS starter in Firebase Studio.
+NSP Manager is a comprehensive, modern web application designed for the administration, registration, and management of National Service Personnel (NSP). Built with a state-of-the-art Glassmorphism UI, a robust Firebase backend, and seamless Role-Based Access Control (RBAC), the platform ensures a secure and stunning administrative experience.
 
-To get started, take a look at src/app/page.tsx.
+## ✨ Features
 
-## Important Security Note
+- **Premium Glassmorphism Aesthetic:** A beautiful, responsive UI featuring dynamic background photography sliders, frosted-glass translucent overlay cards, and seamless Light/Dark neon themes.
+- **Secure Authentication & RBAC:** Complete integration with Firebase Auth. New users are automatically placed in a `Pending` state, securing the system until an existing Administrator approves or rejects their account.
+- **Personnel Dashboard & Registry:** Admins can monitor system-wide statistics through interactive charts, register new National Service Personnel manually, or view the complete searchable roster.
+- **Data Export & Bulk Uploads:** Quickly import hundreds of NSP records instantly via CSV or export the entire current personnel registry directly to your local device.
+- **Universal Audit Logs:** A completely automated, unalterable system log that tracks every critical administrative action (such as deleting records or approving new users), explicitly detailing timestamps, IDs, Emails, and Roles.
+- **Monthly Submissions Management:** Personnel officers can submit monthly evaluation reports that are seamlessly tracked and mapped out over time on the dashboard algorithms.
 
-This project includes a script (`scripts/seed-admin.js`) for assigning the first administrator user. This script requires a Firebase Admin SDK Service Account Key. 
+## 🚀 Getting Started
 
-**This key is highly sensitive and must not be committed to your Git repository.**
+### Prerequisites
+- Node.js 18+
+- A valid Firebase Project
 
-The file `scripts/serviceAccountKey.json` is intentionally excluded from version control via the `.gitignore` file.
+### Installation
+1. Clone the repository and navigate to the project directory:
+   ```bash
+   git clone https://github.com/kingboatgh/studio.git
+   cd studio
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create your `.env.local` variables from the current Firebase configuration strings (API keys, Auth Domains, etc.).
 
-### How to Use the Admin Seeding Script
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   *Your application will be live at `http://localhost:9002`.*
 
-1.  **Download Your Service Account Key**:
-    *   Go to your Firebase project settings.
-    *   Navigate to the "Service accounts" tab.
-    *   Click "Generate new private key".
-    *   A JSON file will be downloaded.
+## 🛡️ Admin Initialization & Security
 
-2.  **Save the Key**:
-    *   Rename the downloaded file to `serviceAccountKey.json`.
-    *   Place it inside the `/scripts` directory of your project.
+If you are setting up the application for the very first time, your newly registered account will automatically be set to **Pending**. Because there are no existing admins to approve you, you must use the backend seeding script to bypass this and grant yourself the first "Admin" role. 
 
-3.  **Run the Script**:
-    *   Follow the instructions in `scripts/seed-admin.js` to add your admin user's UID.
-    *   Run `node scripts/seed-admin.js` from your terminal.
+For strict guidelines on how to seed your first admin securely using the Firebase Admin SDK, please refer to the dedicated instructions in [seedadmin.md](./seedadmin.md).
 
-After running the script, your user will have admin privileges. Remember to keep your `serviceAccountKey.json` file safe and private.
+## 🛠️ Technology Stack
+- **Frontend Framework:** Next.js 14, React 18
+- **Styling:** TailwindCSS, Vanilla CSS, `next-themes`
+- **UI Architecture:** Radix UI primitives with customized visual aesthetics
+- **Backend & Database:** Firebase Authentication, Cloud Firestore
+- **Icons:** Lucide React
