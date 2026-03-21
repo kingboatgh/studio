@@ -23,6 +23,7 @@ export default function NspRegistryPage() {
   const searchParams = useSearchParams();
   const query = searchParams.get('query') || '';
   const currentPage = Number(searchParams.get('page')) || 1;
+  const { isAdmin } = useAdmin();
   
   return (
     <div className="space-y-6">
@@ -33,7 +34,7 @@ export default function NspRegistryPage() {
           </div>
           <div className="flex w-full items-center gap-2 md:w-auto">
             <Search placeholder="Search by Name, ID, NSS No, Email..." />
-            <AddNSPButton />
+            {isAdmin && <AddNSPButton />}
           </div>
         </div>
         <Suspense key={query + currentPage} fallback={<TableSkeleton />}>

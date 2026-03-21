@@ -49,12 +49,13 @@ export function Sidebar() {
           <Users className="h-3.5 w-3.5" />
           NSP Registry
         </NavLink>
-        <NavLink href="/nsp/upload">
-          <Upload className="h-3.5 w-3.5" />
-          Bulk Upload
-        </NavLink>
+        
         {isAdmin && (
             <>
+                <NavLink href="/nsp/upload">
+                    <Upload className="h-3.5 w-3.5" />
+                    Bulk Upload
+                </NavLink>
                 <Separator className="my-2 bg-border/70" />
                 <p className="px-4 text-xs font-semibold uppercase text-muted-foreground/80 tracking-wider mb-1">Admin</p>
                 <NavLink href="/audit-logs">
