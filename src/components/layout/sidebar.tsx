@@ -25,7 +25,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden w-64 flex-col border-r bg-secondary p-4 md:flex">
+    <aside className="hidden w-64 flex-col border-r border-white/10 bg-background/40 backdrop-blur-xl p-4 md:flex shadow-xl">
       <Link href="/" className="mb-4 flex items-center gap-2.5 px-2">
         <div className="bg-primary p-1.5 rounded-md">
           <Building className="h-4 w-4 text-primary-foreground" />

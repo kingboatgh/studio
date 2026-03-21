@@ -103,10 +103,10 @@ export function NSPForm({ nsp }: { nsp?: NSP }) {
 
     try {
       if (nsp) {
-        await updateNSP(firestore, nsp.id, { nssNumber, districtId: DISTRICT_ID, ...rest });
+        await updateNSP(firestore, nsp.id, { nssNumber, districtId: DISTRICT_ID, ...rest, gpsAddress: rest.gpsAddress ?? '' });
         toast({ title: 'Success', description: 'NSP record updated successfully.' });
       } else {
-        await createNewNSP(firestore, { nssNumber, districtId: DISTRICT_ID, ...rest });
+        await createNewNSP(firestore, { nssNumber, districtId: DISTRICT_ID, ...rest, gpsAddress: rest.gpsAddress ?? '' });
         toast({ title: 'Success', description: 'New NSP record created.' });
       }
       router.push('/nsp');

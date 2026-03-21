@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useFirestore, useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
-import { deleteAllPersonnel, exportNspRegistry } from '@/lib/data';
+import { deleteAllPersonnel, exportNspRegistry, fetchPendingUsers, updateUserStatus } from '@/lib/data';
+import type { AppUser } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -58,8 +59,37 @@ function SettingsContent() {
     const { toast } = useToast();
     const [isPending, setIsPending] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [pendingUsers, setPendingUsers] = useState<AppUser[]>([]);
+    const [isLoadingUsers, setIsLoadingUsers] = useState(true);
     const [confirmationText, setConfirmationText] = useState('');
     const requiredConfirmation = 'permanently delete all records';
+
+    useEffect(() => {
+        if (!firestore) return;
+        const loadUsers = async () => {
+            setIsLoadingUsers(true);
+            try {
+                const users = await fetchPendingUsers(firestore);
+                setPendingUsers(users);
+            } catch (error) {
+                console.error("Failed to fetch users", error);
+            } finally {
+                setIsLoadingUsers(false);
+            }
+        };
+        loadUsers();
+    }, [firestore]);
+
+    const handleUserAction = async (userId: string, action: 'Active' | 'Rejected') => {
+        if (!firestore || !user) return;
+        try {
+            await updateUserStatus(firestore, userId, action, { uid: user.uid, email: user.email });
+            setPendingUsers(prev => prev.filter(u => u.id !== userId));
+            toast({ title: 'Success', description: `User account has been ${action.toLowerCase()}.` });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Action failed.' });
+        }
+    }
 
     const handleClearAllData = async () => {
         if (!firestore || !user) {
@@ -146,6 +176,36 @@ function SettingsContent() {
                 <h1 className="text-lg font-bold tracking-tight">Admin Settings</h1>
                 <p className="text-muted-foreground">Manage system-wide configurations and dangerous operations.</p>
             </div>
+            
+            <Card className="border-border">
+                <CardHeader>
+                    <CardTitle>Pending Account Approvals</CardTitle>
+                    <CardDescription>Review and approve new administrators or personnel desk officers.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoadingUsers ? (
+                        <div className="space-y-3"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>
+                    ) : pendingUsers.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-6 border border-dashed rounded-lg bg-muted/50">No pending users right now.</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {pendingUsers.map(u => (
+                                <div key={u.id} className="flex items-center justify-between rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-all">
+                                    <div>
+                                        <h4 className="font-medium text-sm">{u.email}</h4>
+                                        <p className="text-xs text-muted-foreground capitalize mt-1">Role Requested: <strong className="text-foreground">{u.role}</strong></p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button size="sm" variant="outline" className="text-destructive border-destructive/20 hover:bg-destructive/10" onClick={() => handleUserAction(u.id, 'Rejected')}>Reject</Button>
+                                        <Button size="sm" onClick={() => handleUserAction(u.id, 'Active')}>Approve</Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
             <Card className="border-destructive">
                 <CardHeader>
                     <div className="flex items-center gap-3">

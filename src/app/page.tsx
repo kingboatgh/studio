@@ -99,10 +99,10 @@ export default function DashboardPage() {
 }
 
 const statCardVariants = {
-  blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
-  sky: { bg: 'bg-sky-50', text: 'text-sky-600' },
-  green: { bg: 'bg-green-50', text: 'text-green-600' },
-  orange: { bg: 'bg-orange-50', text: 'text-orange-600' },
+  blue: { bg: 'bg-blue-500/10 dark:bg-blue-500/20', text: 'text-blue-600 dark:text-blue-400' },
+  sky: { bg: 'bg-sky-500/10 dark:bg-sky-500/20', text: 'text-sky-600 dark:text-sky-400' },
+  green: { bg: 'bg-green-500/10 dark:bg-green-500/20', text: 'text-green-600 dark:text-green-400' },
+  orange: { bg: 'bg-orange-500/10 dark:bg-orange-500/20', text: 'text-orange-600 dark:text-orange-400' },
 }
 
 function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: string, value?: number, icon: React.ReactNode, loading: boolean, variant?: keyof typeof statCardVariants }) {
@@ -117,7 +117,7 @@ function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: st
           )}
         </div>
         <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", colors.bg)}>
-          {React.cloneElement(icon as React.ReactElement, { className: cn("h-5 w-5", colors.text)})}
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: cn("h-5 w-5", colors.text)})}
         </div>
       </CardContent>
     </Card>

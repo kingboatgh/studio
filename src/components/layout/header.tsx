@@ -19,6 +19,7 @@ import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useAdmin } from '@/hooks/useAdmin';
 import { Separator } from '../ui/separator';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const getPageTitle = (pathname: string) => {
     if (pathname === '/') return 'Dashboard';
@@ -52,7 +53,7 @@ export default function Header() {
   }
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 sticky top-0 z-30">
+    <header className="flex h-14 items-center gap-4 border-b border-white/10 bg-background/40 backdrop-blur-xl px-4 md:px-6 sticky top-0 z-30 shadow-sm transition-all duration-300">
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" className="shrink-0 md:hidden">
@@ -106,7 +107,8 @@ export default function Header() {
           </nav>
         </SheetContent>
       </Sheet>
-      <div className="flex w-full items-center justify-end">
+      <div className="flex w-full items-center justify-end gap-2">
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">

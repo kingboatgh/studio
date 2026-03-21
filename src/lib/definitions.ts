@@ -1,5 +1,13 @@
 import { Timestamp } from 'firebase/firestore';
 
+export type AppUser = {
+  id: string;
+  email: string;
+  role: 'Admin' | 'User';
+  status: 'Active' | 'Pending' | 'Rejected';
+  createdAt?: Timestamp;
+};
+
 export type NSP = {
   id: string; // Document ID from Firestore (System ID)
   email: string;

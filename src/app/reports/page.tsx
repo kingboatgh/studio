@@ -309,10 +309,10 @@ function ReportsComponent() {
 }
 
 const statCardVariants = {
-  blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-200' },
-  green: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-200' },
-  orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' },
-  indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200' },
+  blue: { bg: 'bg-blue-500/10 dark:bg-blue-500/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/20 dark:border-blue-500/40' },
+  green: { bg: 'bg-green-500/10 dark:bg-green-500/20', text: 'text-green-600 dark:text-green-400', border: 'border-green-500/20 dark:border-green-500/40' },
+  orange: { bg: 'bg-orange-500/10 dark:bg-orange-500/20', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-500/20 dark:border-orange-500/40' },
+  indigo: { bg: 'bg-indigo-500/10 dark:bg-indigo-500/20', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-500/20 dark:border-indigo-500/40' },
 };
 
 function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: string, value?: number | string, icon: React.ReactNode, loading: boolean, variant?: keyof typeof statCardVariants }) {
@@ -327,7 +327,7 @@ function StatCard({ title, value, icon, loading, variant = 'blue' }: { title: st
             )}
           </div>
           <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", colors.bg)}>
-            {React.cloneElement(icon as React.ReactElement, { className: cn("h-5 w-5", colors.text) })}
+            {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: cn("h-5 w-5", colors.text) })}
           </div>
         </CardContent>
       </Card>

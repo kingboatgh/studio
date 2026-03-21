@@ -1,4 +1,4 @@
-import type { NSP, Submission, DashboardStats, SubmissionWithNSP, StaffSubmissionStat, AuditLog } from './definitions';
+import type { AppUser, NSP, Submission, DashboardStats, SubmissionWithNSP, StaffSubmissionStat, AuditLog } from './definitions';
 import { 
   collection, 
   getDocs, 
@@ -153,7 +153,7 @@ export async function updateNSP(db: Firestore, id: string, data: Partial<Omit<NS
         updateData.fullName = `${surname} ${otherNames}`;
     }
 
-    updateData.lastUpdatedDate = serverTimestamp();
+    updateData.lastUpdatedDate = serverTimestamp() as any;
 
     await setDoc(docRef, updateData, { merge: true });
 }
@@ -394,4 +394,35 @@ export async function deleteAllPersonnel(db: Firestore, adminUser: {uid: string,
 export async function updateUserProfile(db: Firestore, uid: string, data: { fullName: string }) {
     const userDocRef = doc(db, 'users', uid);
     await updateDoc(userDocRef, data);
+}
+
+export async function fetchPendingUsers(db: Firestore): Promise<AppUser[]> {
+    const usersCol = collection(db, 'users');
+    const q = query(usersCol, where('status', '==', 'Pending'));
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as AppUser));
+}
+
+export async function updateUserStatus(db: Firestore, userId: string, newStatus: 'Active' | 'Rejected', adminUser: {uid: string, email?: string | null}) {
+    if (!adminUser) throw new Error("Admin user is required for this action.");
+
+    const userDocRef = doc(db, 'users', userId);
+    const userDocSnap = await getDoc(userDocRef);
+    
+    if (!userDocSnap.exists()) {
+        throw new Error("User not found.");
+    }
+
+    const userData = userDocSnap.data() as AppUser;
+
+    await updateDoc(userDocRef, { status: newStatus });
+    
+    await createAuditLog(db, adminUser, `USER_${newStatus.toUpperCase()}`, {
+        targetUserId: userId,
+        targetUserEmail: userData.email,
+    });
 }

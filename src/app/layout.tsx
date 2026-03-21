@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -33,20 +34,24 @@ export default function RootLayout({
         <meta name="description" content="NSP Management and Monthly Submission System" />
       </head>
       <body className={cn('antialiased font-sans', fontSans.variable)}>
-        <FirebaseClientProvider>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <FirebaseClientProvider>
             <AuthGuard>
-              <div className="flex min-h-screen w-full bg-secondary">
-                <Sidebar />
-                <div className="flex flex-1 flex-col">
-                  <Header />
-                  <main className="flex-1 p-4 md:p-6">
-                    {children}
-                  </main>
+              <div className="flex min-h-screen w-full items-center justify-center p-4 md:p-12 bg-transparent">
+                <div className="flex w-full max-w-[1400px] h-[90vh] bg-background/80 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.5),0_0_120px_rgba(130,0,200,0.1)] border border-white/5 relative z-10">
+                  <Sidebar />
+                  <div className="flex flex-1 flex-col overflow-hidden">
+                    <Header />
+                    <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+                      {children}
+                    </main>
+                  </div>
                 </div>
               </div>
             </AuthGuard>
-          <Toaster />
-        </FirebaseClientProvider>
+            <Toaster />
+          </FirebaseClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
