@@ -424,5 +424,39 @@ export async function updateUserStatus(db: Firestore, userId: string, newStatus:
     await createAuditLog(db, adminUser, `USER_${newStatus.toUpperCase()}`, {
         targetUserId: userId,
         targetUserEmail: userData.email,
+        targetUserName: userData.fullName || 'Not Provided',
+        targetUserRole: userData.role || 'User',
+    });
+}
+
+export async function fetchAllUsers(db: Firestore): Promise<AppUser[]> {
+    const usersCol = collection(db, 'users');
+    const q = query(usersCol, orderBy('email', 'asc'));
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as AppUser));
+}
+
+export async function deleteUserAccount(db: Firestore, userId: string, adminUser: {uid: string, email?: string | null}) {
+    if (!adminUser) throw new Error("Admin user is required for this action.");
+
+    const userDocRef = doc(db, 'users', userId);
+    const userDocSnap = await getDoc(userDocRef);
+    
+    if (!userDocSnap.exists()) {
+        throw new Error("User not found.");
+    }
+
+    const userData = userDocSnap.data() as AppUser;
+
+    await deleteDoc(userDocRef);
+    await createAuditLog(db, adminUser, `USER_DELETED`, {
+        targetUserId: userId,
+        targetUserEmail: userData.email,
+        targetUserName: userData.fullName || 'Not Provided',
+        targetUserRole: userData.role || 'User',
     });
 }

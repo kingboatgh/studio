@@ -4,14 +4,21 @@ import { useState, useEffect } from 'react';
 import { useFirestore, useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
-import { deleteAllPersonnel, exportNspRegistry, fetchPendingUsers, updateUserStatus } from '@/lib/data';
+import { deleteAllPersonnel, exportNspRegistry, fetchPendingUsers, updateUserStatus, fetchAllUsers, deleteUserAccount } from '@/lib/data';
 import type { AppUser } from '@/lib/definitions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ShieldAlert, FileDown } from 'lucide-react';
+import { ShieldAlert, FileDown, Eye, Trash2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,7 +67,9 @@ function SettingsContent() {
     const [isPending, setIsPending] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [pendingUsers, setPendingUsers] = useState<AppUser[]>([]);
+    const [allUsers, setAllUsers] = useState<AppUser[]>([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+    const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
     const [confirmationText, setConfirmationText] = useState('');
     const requiredConfirmation = 'permanently delete all records';
 
@@ -69,8 +78,12 @@ function SettingsContent() {
         const loadUsers = async () => {
             setIsLoadingUsers(true);
             try {
-                const users = await fetchPendingUsers(firestore);
-                setPendingUsers(users);
+                const [pending, all] = await Promise.all([
+                    fetchPendingUsers(firestore),
+                    fetchAllUsers(firestore)
+                ]);
+                setPendingUsers(pending);
+                setAllUsers(all.filter(u => u.status !== 'Pending'));
             } catch (error) {
                 console.error("Failed to fetch users", error);
             } finally {
@@ -79,6 +92,19 @@ function SettingsContent() {
         };
         loadUsers();
     }, [firestore]);
+
+    const handleDeleteAccount = async (userId: string) => {
+        if (!firestore || !user) return;
+        if (!confirm("Are you sure you want to permanently delete this user account?")) return;
+        try {
+            await deleteUserAccount(firestore, userId, { uid: user.uid, email: user.email });
+            setAllUsers(prev => prev.filter(u => u.id !== userId));
+            setSelectedUser(null);
+            toast({ title: 'Success', description: 'User account has been deleted permanently.' });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Action failed.' });
+        }
+    };
 
     const handleUserAction = async (userId: string, action: 'Active' | 'Rejected') => {
         if (!firestore || !user) return;
@@ -192,7 +218,8 @@ function SettingsContent() {
                             {pendingUsers.map(u => (
                                 <div key={u.id} className="flex items-center justify-between rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-all">
                                     <div>
-                                        <h4 className="font-medium text-sm">{u.email}</h4>
+                                        <h4 className="font-medium text-sm">{u.fullName || "User"}</h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{u.email}</p>
                                         <p className="text-xs text-muted-foreground capitalize mt-1">Role Requested: <strong className="text-foreground">{u.role}</strong></p>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -205,6 +232,84 @@ function SettingsContent() {
                     )}
                 </CardContent>
             </Card>
+
+            <Card className="border-border">
+                <CardHeader>
+                    <CardTitle>All User Accounts</CardTitle>
+                    <CardDescription>View all active and rejected administrative accounts within the system.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoadingUsers ? (
+                        <div className="space-y-3"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>
+                    ) : allUsers.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-6 border border-dashed rounded-lg bg-muted/50">No users found.</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {allUsers.map(u => (
+                                <div key={u.id} className="flex items-center justify-between rounded-lg border bg-card p-4 shadow-sm hover:shadow-md transition-all">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="font-medium text-sm">{u.fullName || "User"}</h4>
+                                            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${u.status === 'Active' ? 'bg-green-500/20 text-green-500' : 'bg-destructive/20 text-destructive'}`}>
+                                                {u.status}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{u.email}</p>
+                                        <p className="text-xs text-muted-foreground capitalize mt-1">Role: <strong className="text-foreground">{u.role}</strong></p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button size="icon" variant="ghost" onClick={() => setSelectedUser(u)} title="Quick Look">
+                                            <Eye className="h-4 w-4 text-blue-500" />
+                                        </Button>
+                                        <Button size="icon" variant="ghost" onClick={() => handleDeleteAccount(u.id)} title="Delete Account">
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Account Details</DialogTitle>
+                        <DialogDescription>
+                            Detailed information for this user.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedUser && (
+                        <div className="space-y-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right text-muted-foreground text-xs font-semibold uppercase">Name</Label>
+                                <div className="col-span-3 font-medium text-lg">{selectedUser.fullName || 'Not Provided'}</div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right text-muted-foreground text-xs font-semibold uppercase">Email</Label>
+                                <div className="col-span-3 font-medium">{selectedUser.email}</div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right text-muted-foreground text-xs font-semibold uppercase">Role</Label>
+                                <div className="col-span-3 capitalize">{selectedUser.role}</div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right text-muted-foreground text-xs font-semibold uppercase">Status</Label>
+                                <div className="col-span-3 uppercase tracking-wider text-xs font-bold font-mono">
+                                    <span className={selectedUser.status === 'Active' ? 'text-green-500' : selectedUser.status === 'Pending' ? 'text-yellow-500' : 'text-destructive'}>
+                                        {selectedUser.status}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right text-muted-foreground text-xs font-semibold uppercase">ID</Label>
+                                <div className="col-span-3 text-xs font-mono text-muted-foreground break-all">{selectedUser.id}</div>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
 
             <Card className="border-destructive">
                 <CardHeader>

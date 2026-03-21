@@ -3,6 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 export type AppUser = {
   id: string;
   email: string;
+  fullName?: string;
   role: 'Admin' | 'User';
   status: 'Active' | 'Pending' | 'Rejected';
   createdAt?: Timestamp;

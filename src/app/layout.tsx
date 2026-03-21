@@ -15,6 +15,7 @@ import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeProvider } from '@/components/theme-provider';
+import { BackgroundSlider } from '@/components/background-slider';
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -35,6 +36,7 @@ export default function RootLayout({
       </head>
       <body className={cn('antialiased font-sans', fontSans.variable)}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <BackgroundSlider />
           <FirebaseClientProvider>
             <AuthGuard>
               <div className="flex min-h-screen w-full items-center justify-center p-4 md:p-12 bg-transparent">

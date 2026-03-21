@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
-import { fetchAuditLogs, deleteAuditLog } from '@/lib/data';
-import type { AuditLog } from '@/lib/definitions';
+import { fetchAuditLogs, deleteAuditLog, fetchAllUsers } from '@/lib/data';
+import type { AuditLog, AppUser } from '@/lib/definitions';
 import {
   Table,
   TableBody,
@@ -18,6 +18,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -41,7 +42,7 @@ const formatAction = (action: string) => {
         .join(' ');
 };
 
-function AuditLogDetails({ log }: { log: AuditLog }) {
+function AuditLogDetails({ log, usersMap }: { log: AuditLog, usersMap?: Record<string, AppUser> }) {
     const details = log.details;
 
     if (!details) {
@@ -62,11 +63,42 @@ function AuditLogDetails({ log }: { log: AuditLog }) {
                     <p><span className="font-medium text-muted-foreground">Records Deleted:</span> {details.deletedCount}</p>
                 </div>
             );
+        case 'USER_ACTIVE':
+        case 'USER_REJECTED':
+        case 'USER_DELETED':
+            const targetUser = usersMap?.[details.targetUserId];
+            const nameToDisplay = details.targetUserName || targetUser?.fullName || 'Not Available';
+            const roleToDisplay = details.targetUserRole || targetUser?.role || 'Unknown';
+            return (
+                <div className="text-sm space-y-1">
+                    <div className="flex flex-col sm:flex-row sm:gap-2 sm:items-baseline">
+                        <span className="font-medium text-muted-foreground w-12">Name:</span>
+                        <span className="text-foreground">{nameToDisplay}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:gap-2 sm:items-baseline">
+                        <span className="font-medium text-muted-foreground w-12">Email:</span>
+                        <span className="text-foreground">{details.targetUserEmail}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:gap-2 sm:items-baseline">
+                        <span className="font-medium text-muted-foreground w-12">Role:</span>
+                        <span className="text-foreground capitalize">{roleToDisplay}</span>
+                    </div>
+                </div>
+            );
         default:
             return (
-                <pre className="text-xs bg-muted p-2 rounded-md font-mono">
-                    {JSON.stringify(details, null, 2)}
-                </pre>
+                <div className="text-xs space-y-1.5">
+                    {Object.entries(details).map(([key, value]) => (
+                        <div key={key} className="flex flex-col sm:flex-row sm:gap-2 sm:items-baseline">
+                            <span className="font-medium text-muted-foreground capitalize whitespace-nowrap">
+                                {key.replace(/([A-Z])/g, ' $1').trim()}:
+                            </span>
+                            <span className="text-foreground break-all bg-muted/30 px-1.5 py-0.5 rounded font-mono text-[10px]">
+                                {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
             );
     }
 }
@@ -101,6 +133,7 @@ export default function AuditLogsPage() {
 
 function AuditLogsContent() {
     const [logs, setLogs] = useState<AuditLog[]>([]);
+    const [usersMap, setUsersMap] = useState<Record<string, AppUser>>({});
     const [loading, setLoading] = useState(true);
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -109,8 +142,16 @@ function AuditLogsContent() {
         if (!firestore) return;
         setLoading(true);
         try {
-            const logData = await fetchAuditLogs(firestore);
+            const [logData, allUsers] = await Promise.all([
+                fetchAuditLogs(firestore),
+                fetchAllUsers(firestore)
+            ]);
             setLogs(logData);
+            const userMapData: Record<string, AppUser> = {};
+            for (const u of allUsers) {
+                userMapData[u.id] = u;
+            }
+            setUsersMap(userMapData);
         } catch (error: any) {
              if (error.code === 'permission-denied') {
                 const permissionError = new FirestorePermissionError({
@@ -179,11 +220,19 @@ function AuditLogsContent() {
                                 ))
                             ) : logs.length > 0 ? (
                                 logs.map(log => (
-                                    <TableRow key={log.id}>
-                                        <TableCell className="font-medium">{formatAction(log.action)}</TableCell>
-                                        <TableCell><AuditLogDetails log={log} /></TableCell>
-                                        <TableCell>{log.adminEmail}</TableCell>
-                                        <TableCell>{log.timestamp?.toDate ? format(log.timestamp.toDate(), 'PPP p') : 'Processing...'}</TableCell>
+                                    <TableRow key={log.id} className="group hover:bg-muted/5 transition-colors">
+                                        <TableCell className="font-medium whitespace-nowrap">
+                                            <Badge variant="outline" className={
+                                                log.action.includes('DELETED') || log.action.includes('REJECTED') ? 'border-destructive/30 text-destructive bg-destructive/10' :
+                                                log.action.includes('ACTIVE') || log.action.includes('APPROVED') ? 'border-green-500/30 text-green-600 dark:text-green-400 bg-green-500/10' :
+                                                'border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/10'
+                                            }>
+                                                {formatAction(log.action)}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="py-4"><AuditLogDetails log={log} usersMap={usersMap} /></TableCell>
+                                        <TableCell className="text-muted-foreground text-sm">{log.adminEmail}</TableCell>
+                                        <TableCell className="text-muted-foreground text-sm whitespace-nowrap">{log.timestamp?.toDate ? format(log.timestamp.toDate(), 'PPP p') : 'Processing...'}</TableCell>
                                         <TableCell className="text-right">
                                             <DeleteLogButton logId={log.id} onDelete={handleDelete} />
                                         </TableCell>
@@ -214,7 +263,7 @@ function DeleteLogButton({ logId, onDelete }: { logId: string, onDelete: (id: st
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-50 group-hover:opacity-100 hover:bg-destructive/10 transition-all">
                     <Trash2 className="h-4 w-4" />
                 </Button>
             </AlertDialogTrigger>
