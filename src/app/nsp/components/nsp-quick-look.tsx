@@ -54,6 +54,7 @@ export function NSPQuickLook({ nsp }: { nsp: NSP }) {
               <DetailRow label="Region" value={nsp.region} />
               <DetailRow label="District" value={nsp.district} />
               <DetailRow label="Service Year" value={String(nsp.serviceYear)} />
+              <DetailRow label="Batch / Serving Year" value={nsp.batch && nsp.year ? `${nsp.batch === 'University' ? 'University batch' : nsp.batch} / ${nsp.year}` : 'N/A'} />
             </Section>
 
             <Separator/>

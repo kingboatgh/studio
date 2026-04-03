@@ -34,6 +34,8 @@ export type NSP = {
   districtId: string; // Firebase district document ID
   serviceYear: number;
   hasSubmittedThisMonth?: boolean;
+  year?: string;
+  batch?: string;
 };
 
 

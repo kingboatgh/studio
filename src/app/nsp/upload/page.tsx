@@ -11,6 +11,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useFirestore } from '@/firebase';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 type CSVRow = {
   email: string;
@@ -44,6 +52,8 @@ export default function BulkUploadPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedBatch, setSelectedBatch] = useState<string>('');
   const { toast } = useToast();
   const firestore = useFirestore();
 
@@ -106,6 +116,8 @@ export default function BulkUploadPage() {
                 districtId: DISTRICT_ID,
                 isEmployed: row.isEmployed.toLowerCase() === 'yes',
                 gpsAddress: row.gpsAddress || '',
+                year: selectedYear,
+                batch: selectedBatch
               });
             } catch (err: any) {
               console.error(`Failed to upload record for ${row.surname}:`, err);
@@ -160,9 +172,36 @@ export default function BulkUploadPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row w-full items-center gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label>Serving Year</Label>
+                <Select value={selectedYear} onValueChange={setSelectedYear} disabled={isUploading}>
+                  <SelectTrigger><SelectValue placeholder="Select serving year" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2025/2026">2025/2026</SelectItem>
+                    <SelectItem value="2026/2027">2026/2027</SelectItem>
+                    <SelectItem value="2027/2028">2027/2028</SelectItem>
+                    <SelectItem value="2028/2029">2028/2029</SelectItem>
+                    <SelectItem value="2029/2030">2029/2030</SelectItem>
+                  </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label>Batch Category</Label>
+                <Select value={selectedBatch} onValueChange={setSelectedBatch} disabled={isUploading}>
+                  <SelectTrigger><SelectValue placeholder="Select batch category" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="University">University</SelectItem>
+                    <SelectItem value="Teachers">Teachers</SelectItem>
+                    <SelectItem value="Nurses">Nurses</SelectItem>
+                  </SelectContent>
+                </Select>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row w-full items-center gap-2 pt-2">
             <Input type="file" accept=".csv" onChange={handleFileChange} disabled={isUploading} className="h-9"/>
-            <Button onClick={handleUpload} disabled={!file || isUploading} size="sm" className="w-full sm:w-auto shrink-0">
+            <Button onClick={handleUpload} disabled={!file || isUploading || !selectedYear || !selectedBatch} size="sm" className="w-full sm:w-auto shrink-0">
               <Upload className="mr-2 h-4 w-4" />
               {isUploading ? 'Uploading...' : 'Upload File'}
             </Button>

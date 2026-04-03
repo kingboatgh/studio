@@ -25,6 +25,7 @@ export function NSPTable({ nsps, isAdmin, onRefetch }: { nsps: NSP[], isAdmin: b
             <TableHead className="w-[120px] px-2 sm:px-4">System ID</TableHead>
             <TableHead className="px-2 sm:px-4">Full Name</TableHead>
             <TableHead className="hidden md:table-cell px-2 sm:px-4">NSS Number</TableHead>
+            <TableHead className="hidden lg:table-cell px-2 sm:px-4">Batch</TableHead>
             <TableHead className="hidden lg:table-cell px-2 sm:px-4">Place of Service</TableHead>
             <TableHead className="px-2 sm:px-4">Status</TableHead>
             <TableHead className="text-right w-[120px] px-2 sm:px-4">Actions</TableHead>
@@ -37,6 +38,9 @@ export function NSPTable({ nsps, isAdmin, onRefetch }: { nsps: NSP[], isAdmin: b
                 <TableCell className="font-medium px-2 sm:px-4 py-3">{nsp.id}</TableCell>
                 <TableCell className="px-2 sm:px-4 py-3 font-medium">{nsp.fullName}</TableCell>
                 <TableCell className="hidden md:table-cell px-2 sm:px-4 py-3">{nsp.nssNumber}</TableCell>
+                <TableCell className="hidden lg:table-cell px-2 sm:px-4 py-3 text-muted-foreground">
+                  {nsp.batch ? `${nsp.batch === 'University' ? 'University batch' : nsp.batch} / ${nsp.year}` : 'N/A'}
+                </TableCell>
                 <TableCell className="hidden lg:table-cell px-2 sm:px-4 py-3">{nsp.posting}</TableCell>
                 <TableCell className="px-2 sm:px-4 py-3">
                   <Badge variant={nsp.isDisabled ? 'outline' : 'secondary'} className={!nsp.isDisabled ? 'border-green-400 bg-green-50 text-green-700' : ''}>
@@ -58,7 +62,7 @@ export function NSPTable({ nsps, isAdmin, onRefetch }: { nsps: NSP[], isAdmin: b
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+              <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                 No NSP records found.
               </TableCell>
             </TableRow>

@@ -46,7 +46,9 @@ const FormSchema = z.object({
   nextOfKinName: z.string().min(1, 'Next of kin name is required.'),
   nextOfKinPhone: z.string().min(1, 'Next of kin phone is required.'),
   isEmployed: z.coerce.boolean(),
-  isDisabled: z.coerce.boolean()
+  isDisabled: z.coerce.boolean(),
+  year: z.string().min(1, 'Year is required.'),
+  batch: z.string().min(1, 'Batch is required.')
 });
 
 type State = {
@@ -205,6 +207,32 @@ export function NSPForm({ nsp }: { nsp?: NSP }) {
            <div>
             <h4 className="text-lg font-medium mb-4">Academic & Posting Information</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="year">Serving Year</Label>
+                    <Select name="year" defaultValue={nsp?.year}>
+                      <SelectTrigger><SelectValue placeholder="Select year e.g. 2025/2026" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2025/2026">2025/2026</SelectItem>
+                        <SelectItem value="2026/2027">2026/2027</SelectItem>
+                        <SelectItem value="2027/2028">2027/2028</SelectItem>
+                        <SelectItem value="2028/2029">2028/2029</SelectItem>
+                        <SelectItem value="2029/2030">2029/2030</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormError name="year" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="batch">Batch / Category</Label>
+                    <Select name="batch" defaultValue={nsp?.batch}>
+                      <SelectTrigger><SelectValue placeholder="Select batch category" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="University">University</SelectItem>
+                        <SelectItem value="Teachers">Teachers</SelectItem>
+                        <SelectItem value="Nurses">Nurses</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormError name="batch" />
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="institution">Institution Attended</Label>
                     <Input id="institution" name="institution" defaultValue={nsp?.institution} />
