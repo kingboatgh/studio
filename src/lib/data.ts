@@ -460,3 +460,22 @@ export async function deleteUserAccount(db: Firestore, userId: string, adminUser
         targetUserRole: userData.role || 'User',
     });
 }
+
+export async function getSubmissionTrends(db: Firestore, year: number): Promise<{ name: string; Submissions: number }[]> {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // Run 12 parallel queries using the existing index pattern (month + year)
+    // This bypasses the need for a new index on just 'year'
+    const promises = monthNames.map(async (name, index) => {
+        const month = index + 1;
+        const q = query(
+            collectionGroup(db, 'submissions'),
+            where('month', '==', month),
+            where('year', '==', year)
+        );
+        const snapshot = await getDocs(q);
+        return { name, Submissions: snapshot.size };
+    });
+
+    return await Promise.all(promises);
+}

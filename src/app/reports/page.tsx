@@ -6,9 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFirestore } from "@/firebase";
-import { exportNspRegistry, getReportStats, exportSubmittedOrPending, getStaffSubmissionStats } from "@/lib/data";
+import { exportNspRegistry, getReportStats, exportSubmittedOrPending, getStaffSubmissionStats, getSubmissionTrends } from "@/lib/data";
 import type { NSP, StaffSubmissionStat } from "@/lib/definitions";
 import { Users, ClipboardCheck, Clock, TrendingUp, FileText } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Papa from 'papaparse';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -46,6 +47,8 @@ function ReportsComponent() {
   const [staffStats, setStaffStats] = useState<StaffSubmissionStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState<string | null>(null);
+  const [trendData, setTrendData] = useState<{name: string, Submissions: number}[]>([]);
+  const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
 
   const firestore = useFirestore();
 
@@ -55,13 +58,15 @@ function ReportsComponent() {
     const month = selectedDate.getMonth() + 1;
     const year = selectedDate.getFullYear();
     
-    const [statsData, staffData] = await Promise.all([
+    const [statsData, staffData, trendDataRes] = await Promise.all([
       getReportStats(firestore, month, year),
       getStaffSubmissionStats(firestore, month, year),
+      getSubmissionTrends(firestore, year),
     ]);
     
     setStats(statsData);
     setStaffStats(staffData);
+    setTrendData(trendDataRes);
     setLoading(false);
   }, [firestore, selectedDate]);
 
@@ -213,6 +218,46 @@ function ReportsComponent() {
           <StatCard title="Pending" value={stats.pending} icon={<Clock />} loading={loading} variant="orange" />
           <StatCard title="Completion" value={`${Math.round(completionPercentage)}%`} icon={<TrendingUp />} loading={loading} variant="indigo" />
       </div>
+
+      <Card className="col-span-full">
+        <CardHeader className="flex flex-row items-center justify-between">
+            <div className="space-y-1">
+                <CardTitle className="text-base">Submission Trends ({selectedDate.getFullYear()})</CardTitle>
+                <CardDescription>Monthly breakdown of submissions for the selected year</CardDescription>
+            </div>
+            <div className="flex gap-2">
+                <Button size="sm" variant={chartType === 'bar' ? 'default' : 'outline'} onClick={() => setChartType('bar')} className="h-8 text-xs">Bar Chart</Button>
+                <Button size="sm" variant={chartType === 'line' ? 'default' : 'outline'} onClick={() => setChartType('line')} className="h-8 text-xs">Line Chart</Button>
+            </div>
+        </CardHeader>
+        <CardContent>
+            {loading ? (
+                <Skeleton className="h-[300px] w-full" />
+            ) : (
+                <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        {chartType === 'bar' ? (
+                            <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} tick={{fill: 'hsl(var(--muted-foreground))'}} />
+                                <YAxis fontSize={12} tickLine={false} axisLine={false} tick={{fill: 'hsl(var(--muted-foreground))'}} />
+                                <Tooltip cursor={{fill: 'hsl(var(--muted))', opacity: 0.2}} contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }}/>
+                                <Bar dataKey="Submissions" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        ) : (
+                            <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} tick={{fill: 'hsl(var(--muted-foreground))'}} />
+                                <YAxis fontSize={12} tickLine={false} axisLine={false} tick={{fill: 'hsl(var(--muted-foreground))'}} />
+                                <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }} />
+                                <Line type="monotone" dataKey="Submissions" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--primary))" }} activeDot={{ r: 6 }} />
+                            </LineChart>
+                        )}
+                    </ResponsiveContainer>
+                </div>
+            )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <Card className="lg:col-span-2">
