@@ -78,6 +78,8 @@ function LoginForm({ setPending, setError, isPending }: { setPending: (p: boolea
     setError(null);
 
     try {
+      const { setPersistence, browserSessionPersistence } = await import('firebase/auth');
+      await setPersistence(auth, browserSessionPersistence);
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/');
     } catch (error: any) {
