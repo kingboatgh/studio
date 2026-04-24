@@ -1,6 +1,6 @@
 'use client';
 
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Building, LayoutDashboard, Menu, Upload, Users, LogOut, User as UserProfileIcon, FileCheck, FileBarChart, History, ShieldAlert } from 'lucide-react';
 import NavLink from './nav-link';
@@ -62,6 +62,7 @@ export default function Header() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="bg-secondary p-4">
+          <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
           <nav className="grid gap-2 text-lg font-medium">
             <Link href="/" className="flex items-center gap-3 text-base font-semibold text-primary mb-4 px-2">
               <div className="bg-primary p-1.5 rounded-md">

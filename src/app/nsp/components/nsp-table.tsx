@@ -22,33 +22,40 @@ export function NSPTable({ nsps, isAdmin, onRefetch }: { nsps: NSP[], isAdmin: b
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[120px] px-2 sm:px-4">System ID</TableHead>
-            <TableHead className="px-2 sm:px-4">Full Name</TableHead>
-            <TableHead className="hidden md:table-cell px-2 sm:px-4">NSS Number</TableHead>
-            <TableHead className="hidden lg:table-cell px-2 sm:px-4">Batch</TableHead>
-            <TableHead className="hidden lg:table-cell px-2 sm:px-4">Place of Service</TableHead>
-            <TableHead className="px-2 sm:px-4">Status</TableHead>
-            <TableHead className="text-right w-[120px] px-2 sm:px-4">Actions</TableHead>
+            <TableHead className="hidden sm:table-cell w-[120px] px-3 sm:px-4">System ID</TableHead>
+            <TableHead className="px-3 sm:px-4">Personnel Details</TableHead>
+            <TableHead className="hidden md:table-cell px-3 sm:px-4">NSS Number</TableHead>
+            <TableHead className="hidden lg:table-cell px-3 sm:px-4">Batch</TableHead>
+            <TableHead className="hidden xl:table-cell px-3 sm:px-4">Place of Service</TableHead>
+            <TableHead className="px-3 sm:px-4">Status</TableHead>
+            <TableHead className="text-right w-[100px] sm:w-[140px] px-3 sm:px-4">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {nsps.length > 0 ? (
             nsps.map((nsp) => (
-              <TableRow key={nsp.id} className="transition-colors hover:bg-muted/50">
-                <TableCell className="font-medium px-2 sm:px-4 py-3">{nsp.id}</TableCell>
-                <TableCell className="px-2 sm:px-4 py-3 font-medium">{nsp.fullName}</TableCell>
-                <TableCell className="hidden md:table-cell px-2 sm:px-4 py-3">{nsp.nssNumber}</TableCell>
-                <TableCell className="hidden lg:table-cell px-2 sm:px-4 py-3 text-muted-foreground">
-                  {nsp.batch ? `${nsp.batch === 'University' ? 'University batch' : nsp.batch} / ${nsp.year}` : 'N/A'}
+              <TableRow key={nsp.id} className="transition-colors hover:bg-muted/30">
+                <TableCell className="hidden sm:table-cell px-3 sm:px-4 py-3">
+                  <span className="text-xs font-mono bg-muted/50 px-2 py-1 rounded-md border text-muted-foreground">{nsp.id}</span>
                 </TableCell>
-                <TableCell className="hidden lg:table-cell px-2 sm:px-4 py-3">{nsp.posting}</TableCell>
-                <TableCell className="px-2 sm:px-4 py-3">
-                  <Badge variant={nsp.isDisabled ? 'outline' : 'secondary'} className={!nsp.isDisabled ? 'border-green-400 bg-green-50 text-green-700' : ''}>
+                <TableCell className="px-3 sm:px-4 py-3 min-w-[160px]">
+                  <div className="font-semibold text-sm whitespace-normal leading-tight break-words">{nsp.fullName}</div>
+                  <div className="md:hidden flex items-center gap-2 mt-1.5">
+                    <span className="text-[11px] text-muted-foreground font-mono bg-muted/30 px-1.5 py-0.5 rounded">{nsp.nssNumber}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="hidden md:table-cell px-3 sm:px-4 py-3 font-mono text-sm text-muted-foreground">{nsp.nssNumber}</TableCell>
+                <TableCell className="hidden lg:table-cell px-3 sm:px-4 py-3 text-sm text-muted-foreground">
+                  {nsp.batch ? `${nsp.batch === 'University' ? 'University' : nsp.batch} / ${nsp.year}` : 'N/A'}
+                </TableCell>
+                <TableCell className="hidden xl:table-cell px-3 sm:px-4 py-3 text-sm truncate max-w-[200px]">{nsp.posting}</TableCell>
+                <TableCell className="px-3 sm:px-4 py-3">
+                  <Badge variant={nsp.isDisabled ? 'outline' : 'secondary'} className={!nsp.isDisabled ? 'border-green-200 bg-green-50 text-green-700 shadow-sm' : 'text-muted-foreground shadow-sm'}>
                     {nsp.isDisabled ? 'Inactive' : 'Active'}
                   </Badge>
                 </TableCell>
-                <TableCell className="px-2 sm:px-4 py-3">
-                  <div className="flex items-center justify-end gap-2">
+                <TableCell className="px-3 sm:px-4 py-3">
+                  <div className="flex items-center justify-end gap-1 sm:gap-2">
                     <NSPQuickLook nsp={nsp} />
                     {isAdmin && (
                       <>
